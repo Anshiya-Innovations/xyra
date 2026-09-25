@@ -30,7 +30,11 @@ createRoot(document.getElementById("root")!).render(
     <StrictMode>
         {/* ponytail: locked to light for now, no dark-mode toggle exposed yet - revisit when asked. */}
         <ThemeProvider defaultTheme="light">
-            <BrowserRouter>
+            {/* import.meta.env.BASE_URL mirrors vite.config.ts's `base` - "/"
+            locally, "/xyra/" in the GitHub Pages build (VITE_BASE_PATH) -
+            without it every route is matched against the wrong prefix and
+            falls through to the catch-all 404 below. */}
+            <BrowserRouter basename={import.meta.env.BASE_URL}>
                 <RouteProvider>
                     <Routes>
                         <Route path="/" element={<Navigate to="/dashboard" replace />} />
