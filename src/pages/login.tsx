@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Key01, Mail01 } from "@untitledui/icons";
 import { useNavigate } from "react-router";
+import { NotificationRegion } from "@/components/application/notification/notification";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
-import { NotificationRegion } from "@/components/application/notification/notification";
 import { XyraMark } from "@/components/foundations/logo/xyra-logo";
 import { AUTH_BASE_URL, TEST_SUBDOMAIN } from "@/lib/config";
 import { MOCK_USERS, notifyBackendOffline } from "@/lib/mock-data";
@@ -108,7 +108,6 @@ export const LoginPage = () => {
                     <XyraMark className="h-9" />
                     <div className="flex flex-col items-center gap-1 text-center">
                         <h1 className="text-display-xs font-semibold text-primary">Welcome back!</h1>
-                        <p className="text-md text-tertiary">Enter your credentials to sign in to Xyra.</p>
                     </div>
                 </div>
 
@@ -124,15 +123,7 @@ export const LoginPage = () => {
                         {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                     </Select>
 
-                    <Input
-                        label="Email"
-                        type="email"
-                        isRequired
-                        icon={Mail01}
-                        placeholder="you@xyrademo.test"
-                        value={email}
-                        onChange={setEmail}
-                    />
+                    <Input label="Email" type="email" isRequired icon={Mail01} placeholder="you@xyrademo.test" value={email} onChange={setEmail} />
 
                     {error && <p className="text-sm text-error-primary">{error}</p>}
 
@@ -146,7 +137,14 @@ export const LoginPage = () => {
                         <div className="h-px flex-1 bg-border-secondary" />
                     </div>
 
-                    <Button type="button" color="secondary" size="lg" iconLeading={Key01} className="w-full" onClick={() => setError("SSO sign-on isn't configured yet — use Persona + Email for now.")}>
+                    <Button
+                        type="button"
+                        color="secondary"
+                        size="lg"
+                        iconLeading={Key01}
+                        className="w-full"
+                        onClick={() => setError("SSO sign-on isn't configured yet — use Persona + Email for now.")}
+                    >
                         Sign in with SSO
                     </Button>
                 </form>
