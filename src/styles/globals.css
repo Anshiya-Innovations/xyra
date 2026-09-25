@@ -1,0 +1,89 @@
+@import "tailwindcss";
+@import "./theme.css";
+@import "./typography.css";
+
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-react-aria-components";
+@plugin "tailwindcss-animate";
+
+@custom-variant dark (&:where(.dark-mode, .dark-mode *));
+@custom-variant label (& [data-label]);
+@custom-variant focus-input-within (&:has(input:focus));
+
+@utility scrollbar-hide {
+    /* For Webkit-based browsers (Chrome, Safari and Opera) */
+    &::-webkit-scrollbar {
+        display: none;
+        -webkit-appearance: none;
+    }
+
+    /* For IE, Edge and Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
+@utility transition-inherit-all {
+    transition-property: inherit;
+    transition-duration: inherit;
+    transition-timing-function: inherit;
+}
+
+html,
+body {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-font-variant-ligatures: contextual;
+    font-variant-ligatures: contextual;
+    -webkit-font-kerning: normal;
+    font-kerning: normal;
+}
+
+/* Hide the default expand arrow on Safari.  */
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Hide default arrows from number inputs. */
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+/* Firefox */
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* Hide the default clear button (X) from search inputs. */
+input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+}
+
+/* Hide the default outline on chart elements. */
+.recharts-surface,
+.recharts-surface g,
+.recharts-surface path {
+    outline: none;
+}
+
+/* xyra-web's own sidebar palette (webapp/css/style.css), scoped alongside
+   .dark-mode on the sidebar - Untitled UI's own dark-mode bg tokens are near-
+   black, which is what nav items/inputs were rendering as. Nav rows and the
+   collapsible group header all use bg-primary/bg-primary_hover (default) and
+   bg-secondary/bg-secondary_hover (selected) - see nav-item.tsx's `styles`.
+   Can't carry xyra-web's selected-row gradient here since bg-secondary
+   resolves through `background-color` (solid only), so it's flattened to
+   solid brand purple. */
+.xyra-sidebar {
+    --color-bg-primary: transparent;
+    --color-bg-primary_hover: rgba(255, 255, 255, 0.06);
+    --color-bg-secondary: #533bff;
+    --color-bg-secondary_hover: #4a35e0;
+    /* Nav item icons, the collapsible chevron, the search icon, and the
+       account card's chevron all use fg-quaternary - white reads better
+       here than Untitled UI's default gray against the navy. */
+    --color-fg-quaternary: #ffffff;
+    --color-fg-quaternary_hover: #ffffff;
+}
