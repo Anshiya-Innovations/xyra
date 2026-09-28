@@ -20,7 +20,9 @@ import { getSession } from "@/lib/session";
 
 const PAGE_SIZE = 10;
 
-const NON_ADMIN_ROLES = new Set(["REVIEWER", "REV1", "REV2", "AUDITOR", "ESCALATION_MANAGER", "USER"]);
+// AUDITOR is deliberately allowed - inspecting this trail is the Auditor
+// persona's main job (embedded in their own page, see auditor.tsx).
+const NON_ADMIN_ROLES = new Set(["REVIEWER", "REV1", "REV2", "ESCALATION_MANAGER", "USER"]);
 
 type FilterOption = { id: string; label: string };
 const ALL: FilterOption = { id: "All", label: "All" };
@@ -96,7 +98,7 @@ function toCsvCell(value: string): string {
     return `"${(value || "").replace(/"/g, '""')}"`;
 }
 
-export const AuditLogsPage = () => {
+export const AuditLogsPage = ({ embedded = false }: { embedded?: boolean }) => {
     const session = getSession();
     const isAdmin = !session?.role || !NON_ADMIN_ROLES.has(session.role.toUpperCase());
 
@@ -248,12 +250,16 @@ export const AuditLogsPage = () => {
 
     return (
         <div className="flex flex-col gap-6">
-            <Breadcrumbs items={[{ label: "Audit Logs" }]} />
+            {!embedded && <Breadcrumbs items={[{ label: "Audit Logs" }]} />}
             <div className="flex items-center justify-between">
-                <div className="flex flex-col gap-1">
-                    <h1 className="text-display-xs font-semibold text-primary">Audit Logs</h1>
-                    <p className="text-md text-tertiary">Admin Activity History</p>
-                </div>
+                {embedded ? (
+                    <p className="text-md text-tertiary">Read-only evidence of every recorded action across the platform.</p>
+                ) : (
+                    <div className="flex flex-col gap-1">
+                        <h1 className="text-display-xs font-semibold text-primary">Audit Logs</h1>
+                        <p className="text-md text-tertiary">Admin Activity History</p>
+                    </div>
+                )}
                 <Button color="secondary" iconLeading={RefreshCw01} onClick={onRefresh}>
                     Refresh
                 </Button>

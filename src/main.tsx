@@ -19,6 +19,7 @@ import { ReportsPage } from "@/pages/admin/reports";
 import { SystemConfigurationPage } from "@/pages/admin/system-configuration";
 import { SystemControlConfigPage } from "@/pages/admin/system-control-config";
 import { SystemControlConfigDetailsPage } from "@/pages/admin/system-control-config-details";
+import { AuditorPage } from "@/pages/auditor/auditor";
 import { EscalationManagerPage } from "@/pages/escalation-manager/escalation-manager";
 import { Reviewer1Page } from "@/pages/reviewer/reviewer1";
 import { Reviewer2Page } from "@/pages/reviewer/reviewer2";
@@ -71,6 +72,10 @@ createRoot(document.getElementById("root")!).render(
 
                         <Route element={<ProtectedLayout allow={["ESCALATION_MANAGER"]} />}>
                             <Route path="/escalation-manager" element={<EscalationManagerPage />} />
+                        </Route>
+
+                        <Route element={<ProtectedLayout allow={["AUDITOR"]} />}>
+                            <Route path="/auditor" element={<AuditorPage />} />
                         </Route>
 
                         <Route path="*" element={<NotFound />} />

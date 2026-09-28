@@ -19,7 +19,7 @@ const PERSONAS = [
     { id: "ACM", label: "Escalation Manager", role: "ESCALATION_MANAGER", email: "escalationmanager@xyrademo.test", route: "/escalation-manager" },
     { id: "REV1", label: "Reviewer 1", role: "REVIEWER", email: "reviewer1@xyrademo.test", route: "/reviewer-1" },
     { id: "REV2", label: "Reviewer 2", role: "REVIEWER", email: "reviewer2@xyrademo.test", route: "/reviewer-2" },
-    { id: "AUDITOR", label: "Auditor", role: "AUDITOR", email: "auditor@xyrademo.test", route: "/dashboard" },
+    { id: "AUDITOR", label: "Auditor", role: "AUDITOR", email: "auditor@xyrademo.test", route: "/auditor" },
 ] as const;
 
 export const LoginPage = () => {

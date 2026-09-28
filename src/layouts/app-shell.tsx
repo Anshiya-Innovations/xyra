@@ -33,11 +33,11 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
           }
         : undefined;
 
-    // Reviewer/Escalation Manager have only one real destination each - a
-    // full sidebar (search box, ~10 collapsible sections) is built for the
-    // admin app and would be empty chrome around a single link here. No nav
-    // links at all - the page itself is the only destination.
-    if (session?.role === "REVIEWER" || session?.role === "ESCALATION_MANAGER") {
+    // Reviewer/Escalation Manager/Auditor have only one real destination each
+    // (their sections are tabs inside that page) - a full sidebar (search
+    // box, ~10 collapsible sections) is built for the admin app and would be
+    // empty chrome around a single link here. No nav links at all.
+    if (session?.role === "REVIEWER" || session?.role === "ESCALATION_MANAGER" || session?.role === "AUDITOR") {
         return (
             <div className="flex min-h-dvh flex-col bg-secondary">
                 <HeaderNavigationSimple activeUrl={location.pathname} items={[]} account={account} onSignOut={onSignOut} />
