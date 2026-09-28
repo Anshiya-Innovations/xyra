@@ -1,4 +1,4 @@
-import { BarChart03, Building05, CheckVerified01, File06, Home02, Key01, Lightbulb02, List, Settings01, Shield01 } from "@untitledui/icons";
+import { Building05, CheckVerified01, File06, Home02, Key01, Lightbulb02, List, Settings01, Shield01 } from "@untitledui/icons";
 import { Badge } from "@/components/base/badges/badges";
 import type { NavItemType } from "@/components/application/app-navigation/config";
 
@@ -22,5 +22,4 @@ export const NAV_ITEMS: NavItemType[] = [
     { label: "System Configuration", href: "/configuration", icon: Settings01 },
     { label: "Access Management", href: "/access-management", icon: Key01 },
     { label: "Organization", href: "/organization", icon: Building05 },
-    { label: "Risk Analytics", href: "/risk-analytics", icon: BarChart03, badge: <Badge color="warning" size="sm">3 Risks</Badge> },
 ];

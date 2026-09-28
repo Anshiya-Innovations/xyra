@@ -15,7 +15,6 @@ import { DashboardPage } from "@/pages/admin/dashboard";
 import { DeviationReportPage } from "@/pages/admin/deviation-report";
 import { OrganizationPage } from "@/pages/admin/organization";
 import { OrganizationDetailsPage } from "@/pages/admin/organization-details";
-import { PlaceholderPage } from "@/pages/admin/placeholder-page";
 import { ReportsPage } from "@/pages/admin/reports";
 import { SoxCompliancePage } from "@/pages/admin/sox-compliance";
 import { SystemConfigurationPage } from "@/pages/admin/system-configuration";
@@ -60,7 +59,6 @@ createRoot(document.getElementById("root")!).render(
                             <Route path="/access-management" element={<AccessManagementPage />} />
                             <Route path="/organization" element={<OrganizationPage />} />
                             <Route path="/organization/:orgId" element={<OrganizationDetailsPage />} />
-                            <Route path="/risk-analytics" element={<PlaceholderPage title="Risk Analytics" />} />
                         </Route>
 
                         <Route element={<ProtectedLayout />}>
