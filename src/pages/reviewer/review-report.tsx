@@ -29,6 +29,13 @@ export function slaLabel(review: Pick<ReviewEntry, "slaDeadline" | "isOverdue">,
     return { text: `Due in ${amount}`, color: diff < DAY ? "warning" : "success", title };
 }
 
+// Filter buckets matching slaLabel's colors exactly.
+export const SLA_BUCKETS = ["Overdue", "Due within 24h", "On track"] as const;
+export function slaBucket(review: Pick<ReviewEntry, "slaDeadline" | "isOverdue">): (typeof SLA_BUCKETS)[number] | null {
+    const { color } = slaLabel(review);
+    return color === "error" ? "Overdue" : color === "warning" ? "Due within 24h" : color === "success" ? "On track" : null;
+}
+
 export function SlaBadge({ review }: { review: Pick<ReviewEntry, "slaDeadline" | "isOverdue"> }) {
     const sla = slaLabel(review);
     return (

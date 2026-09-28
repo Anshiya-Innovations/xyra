@@ -20,8 +20,9 @@ import { type ReviewEntry, type SystemEntry, auditLogApi, reviewApi, systemConfi
 import { REVIEWER_CONFIG, type ReviewerLevelConfig } from "@/lib/reviewer-config";
 import { getSession } from "@/lib/session";
 import { AlertContext, Field, formatTimestamp } from "./alert-context";
-import { SlaBadge } from "./review-report";
-import { severityRank, toTime, useTableSort } from "@/hooks/use-table-sort";
+import { SLA_BUCKETS, SlaBadge, slaBucket } from "./review-report";
+import { severityRank, toTime, usePagination, useTableSort } from "@/hooks/use-table-sort";
+import { PaginationPageDefault } from "@/components/application/pagination/pagination";
 
 const SEVERITY_BADGE_COLOR: Record<string, BadgeColors> = { critical: "error", high: "error", medium: "warning", low: "success" };
 const badgeColorFor = (status: string) => SEVERITY_BADGE_COLOR[(status || "").toLowerCase()] ?? "gray";
@@ -30,6 +31,7 @@ const DECISION_LABEL: Record<string, string> = { APPROVE: "Approved", REMEDIATE:
 
 type FilterOption = { id: string; label: string };
 const ALL: FilterOption = { id: "All", label: "All" };
+const SEVERITY_OPTIONS: FilterOption[] = [ALL, ...["Critical", "High", "Medium", "Low"].map((v) => ({ id: v, label: v }))];
 
 function distinctOptions(values: string[]): FilterOption[] {
     const seen = new Set<string>();
@@ -66,12 +68,15 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
 
     const [queueQuery, setQueueQuery] = useState("");
     const [queueSystem, setQueueSystem] = useState("All");
+    const [queueSla, setQueueSla] = useState("All");
+    const [queueSeverity, setQueueSeverity] = useState("All");
 
     const [historyQuery, setHistoryQuery] = useState("");
     const [historyControlId, setHistoryControlId] = useState("");
     const [historySystem, setHistorySystem] = useState("All");
     const [historyDecision, setHistoryDecision] = useState("All");
     const [historyTicketStatus, setHistoryTicketStatus] = useState("All");
+    const [historySeverity, setHistorySeverity] = useState("All");
     const [dateRange, setDateRange] = useState<{ start: DateValue; end: DateValue } | null>(null);
 
     const [selectedReview, setSelectedReview] = useState<ReviewEntry | null>(null);
@@ -116,9 +121,11 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
         return queue.filter((r) => {
             if (q && !`${r.controlId} ${r.controlDescription} ${r.systemId}`.toLowerCase().includes(q)) return false;
             if (queueSystem !== "All" && r.systemId !== queueSystem) return false;
+            if (queueSla !== "All" && slaBucket(r) !== queueSla) return false;
+            if (queueSeverity !== "All" && (r.severity || "").toLowerCase() !== queueSeverity.toLowerCase()) return false;
             return true;
         });
-    }, [queue, queueQuery, queueSystem]);
+    }, [queue, queueQuery, queueSystem, queueSla, queueSeverity]);
 
     const queueKpis = useMemo(() => ({ pending: queue.length, overdue: queue.filter((r) => r.isOverdue).length }), [queue]);
 
@@ -138,6 +145,7 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                 if (decision !== historyDecision) return false;
             }
             if (historyTicketStatus !== "All" && r.ticketStatus !== historyTicketStatus) return false;
+            if (historySeverity !== "All" && (r.severity || "").toLowerCase() !== historySeverity.toLowerCase()) return false;
             if (start || end) {
                 const at = atFieldFor(r, level);
                 if (!at) return false;
@@ -152,7 +160,7 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
             }
             return true;
         });
-    }, [history, historyQuery, historyControlId, historySystem, historyDecision, historyTicketStatus, dateRange, level]);
+    }, [history, historyQuery, historyControlId, historySystem, historyDecision, historyTicketStatus, historySeverity, dateRange, level]);
 
     const queueSort = useTableSort(filteredQueue, {
         controlId: (r) => r.controlId,
@@ -170,7 +178,11 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
         decision: (r) => DECISION_LABEL[statusFieldFor(r, level)] || statusFieldFor(r, level),
         reviewedDate: (r) => toTime(atFieldFor(r, level)),
         ticketStatus: (r) => r.ticketStatus,
+        severity: (r) => severityRank(r.severity),
     });
+
+    const queuePages = usePagination(queueSort.sorted);
+    const historyPages = usePagination(historySort.sorted);
 
     const historyKpis = useMemo(() => {
         let approved = 0;
@@ -186,6 +198,8 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
     const onResetQueueFilters = () => {
         setQueueQuery("");
         setQueueSystem("All");
+        setQueueSla("All");
+        setQueueSeverity("All");
     };
 
     const onResetHistoryFilters = () => {
@@ -194,6 +208,7 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
         setHistorySystem("All");
         setHistoryDecision("All");
         setHistoryTicketStatus("All");
+        setHistorySeverity("All");
         setDateRange(null);
     };
 
@@ -436,7 +451,7 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                     Reset
                                 </Button>
                             </div>
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                                 <Input
                                     label="Search"
                                     icon={SearchLg}
@@ -444,6 +459,12 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                     value={queueQuery}
                                     onChange={setQueueQuery}
                                 />
+                                <Select label="SLA" selectedKey={queueSla} onSelectionChange={(k) => setQueueSla(k as string)} items={[ALL, ...SLA_BUCKETS.map((b) => ({ id: b, label: b }))]}>
+                                    {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
+                                </Select>
+                                <Select label="Severity" selectedKey={queueSeverity} onSelectionChange={(k) => setQueueSeverity(k as string)} items={SEVERITY_OPTIONS}>
+                                    {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
+                                </Select>
                                 <Select
                                     label="System"
                                     selectedKey={queueSystem}
@@ -492,7 +513,7 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                         <Table.Head allowsSorting id="sla" label="SLA" />
                                         <Table.Head id="actions" />
                                     </Table.Header>
-                                    <Table.Body items={queueSort.sorted}>
+                                    <Table.Body items={queuePages.paged}>
                                         {(review) => (
                                             <Table.Row id={review.id}>
                                                 <Table.Cell className="font-medium text-primary">
@@ -527,6 +548,11 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                         )}
                                     </Table.Body>
                                 </Table>
+                                {queuePages.total > 1 && (
+                                    <div className="px-4 py-4 md:px-6">
+                                        <PaginationPageDefault page={queuePages.page} total={queuePages.total} onPageChange={queuePages.setPage} />
+                                    </div>
+                                )}
                             </TableCard.Root>
                         )}
                     </div>
@@ -581,6 +607,9 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                 >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
+                                <Select label="Severity" selectedKey={historySeverity} onSelectionChange={(k) => setHistorySeverity(k as string)} items={SEVERITY_OPTIONS}>
+                                    {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
+                                </Select>
                                 <div className="col-span-2 flex flex-col gap-1.5">
                                     <span className="text-sm font-medium text-secondary">Date Range</span>
                                     <DateRangePicker value={dateRange} onChange={setDateRange} />
@@ -615,12 +644,13 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                         <Table.Head allowsSorting id="ticket" label="Ticket" isRowHeader />
                                         <Table.Head allowsSorting id="controlId" label="Control ID" />
                                         <Table.Head allowsSorting id="system" label="System" />
+                                        <Table.Head allowsSorting id="severity" label="Severity" />
                                         <Table.Head allowsSorting id="decision" label="Decision" />
                                         <Table.Head allowsSorting id="reviewedDate" label="Reviewed Date" />
                                         <Table.Head allowsSorting id="ticketStatus" label="Ticket Status" />
                                         <Table.Head id="actions" />
                                     </Table.Header>
-                                    <Table.Body items={historySort.sorted}>
+                                    <Table.Body items={historyPages.paged}>
                                         {(review) => {
                                             const status = statusFieldFor(review, level);
                                             return (
@@ -641,6 +671,11 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                                     <Table.Cell className="font-medium text-primary">{review.controlId}</Table.Cell>
                                                     <Table.Cell>{review.systemId}</Table.Cell>
                                                     <Table.Cell>
+                                                        <Badge color={badgeColorFor(review.severity)} size="sm">
+                                                            {review.severity}
+                                                        </Badge>
+                                                    </Table.Cell>
+                                                    <Table.Cell>
                                                         <Badge color={DECISION_BADGE_COLOR[status] ?? "gray"} size="sm">
                                                             {DECISION_LABEL[status] || status}
                                                         </Badge>
@@ -659,6 +694,11 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                         }}
                                     </Table.Body>
                                 </Table>
+                                {historyPages.total > 1 && (
+                                    <div className="px-4 py-4 md:px-6">
+                                        <PaginationPageDefault page={historyPages.page} total={historyPages.total} onPageChange={historyPages.setPage} />
+                                    </div>
+                                )}
                             </TableCard.Root>
                         )}
                     </div>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { SortDescriptor } from "react-aria-components";
 
 export type SortValue = string | number | null | undefined;
@@ -33,6 +33,18 @@ export function useTableSort<T>(rows: T[], accessors: Record<string, (row: T) =>
     }, [rows, sortDescriptor]);
 
     return { sorted, sortDescriptor, onSortChange: setSortDescriptor };
+}
+
+// Client-side pages over already filtered/sorted rows. Jumps back to page 1
+// whenever the row list changes (filter, sort or reload), so a narrowed
+// result never leaves you stranded on an empty page 7.
+export function usePagination<T>(rows: T[], pageSize = 10) {
+    const [page, setPage] = useState(1);
+    useEffect(() => setPage(1), [rows]);
+    const total = Math.max(1, Math.ceil(rows.length / pageSize));
+    const current = Math.min(page, total);
+    const paged = useMemo(() => rows.slice((current - 1) * pageSize, current * pageSize), [rows, current, pageSize]);
+    return { page: current, total, paged, setPage };
 }
 
 export const toTime = (iso: string | null | undefined): number | null => {
