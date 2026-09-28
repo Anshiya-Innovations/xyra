@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Download01, RefreshCw01, SearchLg } from "@untitledui/icons";
+import { ArrowLeft, Download01, RefreshCw01, SearchLg } from "@untitledui/icons";
 import type { DateValue } from "react-aria-components";
 import { Breadcrumbs } from "@/components/application/breadcrumbs/breadcrumbs";
 import { DateRangePicker } from "@/components/application/date-picker/date-range-picker";
 import { EmptyState } from "@/components/application/empty-state/empty-state";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
-import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import { notify } from "@/components/application/notification/notification";
 import { Table, TableCard } from "@/components/application/table/table";
 import { Tabs } from "@/components/application/tabs/tabs";
@@ -15,6 +14,7 @@ import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { type ReviewEntry, type SystemEntry, reviewApi, systemConfigApi } from "@/lib/api-client";
+import { AlertContext, Field, formatTimestamp } from "@/pages/reviewer/alert-context";
 
 const SEVERITY_BADGE_COLOR: Record<string, BadgeColors> = { critical: "error", high: "error", medium: "warning", low: "success" };
 const badgeColorFor = (status: string) => SEVERITY_BADGE_COLOR[(status || "").toLowerCase()] ?? "gray";
@@ -34,12 +34,6 @@ function distinctOptions(values: string[]): FilterOption[] {
         }
     });
     return out;
-}
-
-function formatTimestamp(iso: string | null | undefined): string {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    return isNaN(d.getTime()) ? String(iso) : d.toLocaleString();
 }
 
 // Every history row here is terminal at whichever level actually decided it -
@@ -74,8 +68,7 @@ export const EscalationManagerPage = () => {
     const [historyTicketStatus, setHistoryTicketStatus] = useState("All");
     const [dateRange, setDateRange] = useState<{ start: DateValue; end: DateValue } | null>(null);
 
-    const [selectedReport, setSelectedReport] = useState<ReviewEntry | null>(null);
-    const [selectedHistoryItem, setSelectedHistoryItem] = useState<ReviewEntry | null>(null);
+    const [selected, setSelected] = useState<ReviewEntry | null>(null);
 
     const load = () => {
         setIsLoading(true);
@@ -213,6 +206,8 @@ export const EscalationManagerPage = () => {
         );
     }
 
+    if (selected) return <ReportDetail review={selected} onBack={() => setSelected(null)} />;
+
     return (
         <div className="flex flex-col gap-6">
             <Breadcrumbs items={[{ label: "Escalation Manager" }]} />
@@ -336,7 +331,7 @@ export const EscalationManagerPage = () => {
                                                 </Table.Cell>
                                                 <Table.Cell>
                                                     <div className="flex justify-end">
-                                                        <Button color="secondary" size="sm" onClick={() => setSelectedReport(review)}>
+                                                        <Button color="secondary" size="sm" onClick={() => setSelected(review)}>
                                                             View Report
                                                         </Button>
                                                     </div>
@@ -466,7 +461,7 @@ export const EscalationManagerPage = () => {
                                                     <Table.Cell>{review.ticketStatus || "—"}</Table.Cell>
                                                     <Table.Cell>
                                                         <div className="flex justify-end">
-                                                            <Button color="secondary" size="sm" onClick={() => setSelectedHistoryItem(review)}>
+                                                            <Button color="secondary" size="sm" onClick={() => setSelected(review)}>
                                                                 View Details
                                                             </Button>
                                                         </div>
@@ -482,90 +477,126 @@ export const EscalationManagerPage = () => {
                 </Tabs.Panel>
             </Tabs>
 
-            {/* VIEW REPORT MODAL (read-only) */}
-            <ModalOverlay isOpen={!!selectedReport} onOpenChange={(open) => !open && setSelectedReport(null)}>
-                <Modal>
-                    <Dialog>
-                        <div className="w-full max-w-2xl rounded-xl bg-primary p-6 shadow-xl ring-1 ring-secondary">
-                            {selectedReport && (
-                                <>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-primary">{selectedReport.controlId}</h3>
-                                            <p className="text-sm text-tertiary">{selectedReport.controlDescription}</p>
-                                        </div>
-                                        <Badge color={badgeColorFor(selectedReport.severity)} size="md">
-                                            {selectedReport.severity}
-                                        </Badge>
-                                    </div>
-                                    <div className="mt-4 grid grid-cols-2 gap-4">
-                                        <Field label="System" value={selectedReport.systemId} />
-                                        <Field label="Generated Date" value={formatTimestamp(selectedReport.generatedDate)} />
-                                        <Field label="Days Pending" value={String(selectedReport.daysPending ?? "—")} />
-                                        <Field label="SLA" value={selectedReport.isOverdue ? "Overdue" : "On Track"} />
-                                    </div>
-                                    <div className="mt-4 grid grid-cols-2 gap-4">
-                                        <Field label="Reviewer 1 Comments" value={selectedReport.reviewer1Comment || "—"} />
-                                        <Field label="Reviewer 2 Comments" value={selectedReport.reviewer2Comment || "—"} />
-                                    </div>
-                                    <div className="mt-6 flex justify-end">
-                                        <Button color="secondary" onClick={() => setSelectedReport(null)}>
-                                            Close
-                                        </Button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </Dialog>
-                </Modal>
-            </ModalOverlay>
-
-            {/* HISTORY DETAIL MODAL (read-only) */}
-            <ModalOverlay isOpen={!!selectedHistoryItem} onOpenChange={(open) => !open && setSelectedHistoryItem(null)}>
-                <Modal>
-                    <Dialog>
-                        <div className="w-full max-w-2xl rounded-xl bg-primary p-6 shadow-xl ring-1 ring-secondary">
-                            {selectedHistoryItem && (
-                                <>
-                                    <div className="flex items-start justify-between">
-                                        <div>
-                                            <h3 className="text-lg font-semibold text-primary">{selectedHistoryItem.controlId}</h3>
-                                            <p className="text-sm text-tertiary">{selectedHistoryItem.controlDescription}</p>
-                                        </div>
-                                        <Badge color={DECISION_BADGE_COLOR[terminalStatus(selectedHistoryItem)] ?? "gray"} size="md">
-                                            {DECISION_LABEL[terminalStatus(selectedHistoryItem)] || terminalStatus(selectedHistoryItem)}
-                                        </Badge>
-                                    </div>
-                                    <div className="mt-4 grid grid-cols-2 gap-4">
-                                        <Field label="Ticket" value={selectedHistoryItem.ticketNumber || "—"} />
-                                        <Field label="Ticket Status" value={selectedHistoryItem.ticketStatus || "—"} />
-                                        <Field label="System" value={selectedHistoryItem.systemId} />
-                                        <Field label="Decided Date" value={formatTimestamp(terminalAt(selectedHistoryItem))} />
-                                    </div>
-                                    <div className="mt-4 grid grid-cols-2 gap-4">
-                                        <Field label="Reviewer 1 Comments" value={selectedHistoryItem.reviewer1Comment || "—"} />
-                                        <Field label="Reviewer 2 Comments" value={selectedHistoryItem.reviewer2Comment || "—"} />
-                                    </div>
-                                    <div className="mt-6 flex justify-end">
-                                        <Button color="secondary" onClick={() => setSelectedHistoryItem(null)}>
-                                            Close
-                                        </Button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-                    </Dialog>
-                </Modal>
-            </ModalOverlay>
         </div>
     );
 };
 
-function Field({ label, value }: { label: string; value: string }) {
+function DecisionBadge({ status }: { status: ReviewEntry["reviewer1Status"] }) {
+    if (status === "NEW") return <Badge color="gray" size="sm">Pending</Badge>;
     return (
-        <div>
-            <div className="text-xs font-semibold text-tertiary">{label}</div>
-            <div className="mt-1 text-sm text-primary">{value}</div>
+        <Badge color={DECISION_BADGE_COLOR[status] ?? "gray"} size="sm">
+            {DECISION_LABEL[status] || status}
+        </Badge>
+    );
+}
+
+function ReviewerSummary({ title, status, by, at, comment }: { title: string; status: ReviewEntry["reviewer1Status"]; by: string; at: string | null; comment: string }) {
+    return (
+        <div className="flex flex-col gap-4 rounded-lg bg-secondary p-4 ring-1 ring-secondary">
+            <div className="flex items-center justify-between">
+                <h3 className="text-md font-semibold text-primary">{title}</h3>
+                <DecisionBadge status={status} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+                <Field label="Reviewed By" value={by || "—"} />
+                <Field label="Review Date" value={formatTimestamp(at)} />
+            </div>
+            <Field label="Root Cause Analysis" value={comment || "—"} />
+        </div>
+    );
+}
+
+// Read-only counterpart of the Reviewer detail page - same alert context,
+// no RCA / signature / decision controls (this persona only oversees).
+function ReportDetail({ review, onBack }: { review: ReviewEntry; onBack: () => void }) {
+    const isClosed = review.reviewer1Status === "REMEDIATE" || review.reviewer2Status !== "NEW";
+    const stage = isClosed ? "Closed" : review.reviewer1Status === "NEW" ? "Awaiting Level 1" : "Awaiting Level 2";
+
+    return (
+        <div className="flex flex-col gap-6">
+            <Breadcrumbs items={[{ label: "Escalation Manager" }, { label: `${review.controlId} Report` }]} />
+            <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-1">
+                    <Button color="link-gray" size="sm" iconLeading={ArrowLeft} onClick={onBack} className="w-fit">
+                        Back to Escalation Manager
+                    </Button>
+                    <h1 className="text-display-xs font-semibold text-primary">
+                        {review.controlId} on {review.systemId}
+                    </h1>
+                    <p className="text-md text-tertiary">{review.controlDescription}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {review.escalationDue && (
+                        <Badge color="error" size="lg">
+                            Escalation Due
+                        </Badge>
+                    )}
+                    <Badge color={badgeColorFor(review.severity)} size="lg">
+                        {review.severity}
+                    </Badge>
+                </div>
+            </div>
+
+            <div className="rounded-xl bg-primary p-6 ring-1 ring-secondary">
+                <h2 className="mb-4 text-lg font-semibold text-primary">Review Status</h2>
+                <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+                    <Field label="Stage" value={stage} />
+                    <Field label="Generated Date" value={formatTimestamp(review.generatedDate)} />
+                    <Field label="Days Pending" value={isClosed ? "—" : String(review.daysPending ?? 0)} />
+                    <Field label="SLA" value={isClosed ? "—" : review.isOverdue ? "Overdue" : "On Track"} />
+                </div>
+            </div>
+
+            <div className="rounded-xl bg-primary p-6 ring-1 ring-secondary">
+                <h2 className="mb-4 text-lg font-semibold text-primary">Review Chain</h2>
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <ReviewerSummary
+                        title="Level 1 — Control Exception Reviewer"
+                        status={review.reviewer1Status}
+                        by={review.reviewer1ByName}
+                        at={review.reviewer1At}
+                        comment={review.reviewer1Comment}
+                    />
+                    <ReviewerSummary
+                        title="Level 2 — Manager Exception Reviewer"
+                        status={review.reviewer2Status}
+                        by={review.reviewer2ByName}
+                        at={review.reviewer2At}
+                        comment={review.reviewer2Comment}
+                    />
+                </div>
+            </div>
+
+            {review.ticketNumber && (
+                <div className="rounded-xl bg-primary p-6 ring-1 ring-secondary">
+                    <h2 className="mb-4 text-lg font-semibold text-primary">Remediation Ticket</h2>
+                    <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+                        <div>
+                            <div className="text-xs font-semibold text-tertiary">Ticket</div>
+                            <div className="mt-1 text-sm">
+                                {review.ticketUrl ? (
+                                    <a href={review.ticketUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-secondary hover:underline">
+                                        {review.ticketNumber}
+                                    </a>
+                                ) : (
+                                    <span className="text-primary">{review.ticketNumber}</span>
+                                )}
+                            </div>
+                        </div>
+                        <Field label="Ticket Status" value={review.ticketStatus || "—"} />
+                        <Field label="Raised At" value={review.ticketLevel ? `Level ${review.ticketLevel}` : "—"} />
+                        <Field label="Created" value={formatTimestamp(review.ticketCreatedAt)} />
+                    </div>
+                </div>
+            )}
+
+            <AlertContext alertId={review.alertId} />
+
+            <div className="flex justify-end">
+                <Button color="secondary" onClick={onBack}>
+                    Back to Escalation Manager
+                </Button>
+            </div>
         </div>
     );
 }

@@ -16,22 +16,12 @@ import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { TextArea } from "@/components/base/textarea/textarea";
-import {
-    type AlertHeader,
-    type AlertItem,
-    type ReviewEntry,
-    type RunLogEntry,
-    type SystemEntry,
-    auditLogApi,
-    deviationApi,
-    reviewApi,
-    systemConfigApi,
-} from "@/lib/api-client";
+import { type ReviewEntry, type SystemEntry, auditLogApi, reviewApi, systemConfigApi } from "@/lib/api-client";
 import { REVIEWER_CONFIG, type ReviewerLevelConfig } from "@/lib/reviewer-config";
 import { getSession } from "@/lib/session";
+import { AlertContext, Field, formatTimestamp } from "./alert-context";
 
 const SEVERITY_BADGE_COLOR: Record<string, BadgeColors> = { critical: "error", high: "error", medium: "warning", low: "success" };
-const LEVEL_BADGE_COLOR: Record<string, BadgeColors> = { ERROR: "error", WARNING: "warning", INFO: "gray" };
 const badgeColorFor = (status: string) => SEVERITY_BADGE_COLOR[(status || "").toLowerCase()] ?? "gray";
 const DECISION_BADGE_COLOR: Record<string, BadgeColors> = { APPROVE: "success", REMEDIATE: "error" };
 const DECISION_LABEL: Record<string, string> = { APPROVE: "Approved", REMEDIATE: "Rejected" };
@@ -49,12 +39,6 @@ function distinctOptions(values: string[]): FilterOption[] {
         }
     });
     return out;
-}
-
-function formatTimestamp(iso: string | null | undefined): string {
-    if (!iso) return "—";
-    const d = new Date(iso);
-    return isNaN(d.getTime()) ? String(iso) : d.toLocaleString();
 }
 
 function statusFieldFor(review: ReviewEntry, level: 1 | 2): ReviewEntry["reviewer1Status"] {
@@ -89,17 +73,8 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
     const [dateRange, setDateRange] = useState<{ start: DateValue; end: DateValue } | null>(null);
 
     const [selectedReview, setSelectedReview] = useState<ReviewEntry | null>(null);
-    const [alertHeader, setAlertHeader] = useState<AlertHeader | null>(null);
-    const [alertItems, setAlertItems] = useState<AlertItem[]>([]);
-    const [isLoadingDetail, setIsLoadingDetail] = useState(false);
     const [rcaText, setRcaText] = useState("");
     const [elecSigConfirmed, setElecSigConfirmed] = useState(false);
-
-    const [isLogsOpen, setIsLogsOpen] = useState(false);
-    const [activeItem, setActiveItem] = useState<AlertItem | null>(null);
-    const [logs, setLogs] = useState<RunLogEntry[]>([]);
-    const [isLogsLoading, setIsLogsLoading] = useState(false);
-    const [cachedLogs, setCachedLogs] = useState<RunLogEntry[] | null>(null);
 
     const [isApproveOpen, setIsApproveOpen] = useState(false);
     const [isRejectOpen, setIsRejectOpen] = useState(false);
@@ -206,9 +181,6 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
         setSelectedReview(review);
         setRcaText(commentFieldFor(review, level) || "");
         setElecSigConfirmed(false);
-        setAlertHeader(null);
-        setAlertItems([]);
-        setCachedLogs(null);
 
         auditLogApi.logEvent({
             action: "VIEW_REPORT",
@@ -220,41 +192,9 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
             systemId: review.systemId,
             controlId: review.controlId,
         });
-
-        if (!review.alertId) return;
-        setIsLoadingDetail(true);
-        deviationApi
-            .getDetail(review.alertId)
-            .then((res) => {
-                if (res.success) {
-                    setAlertHeader(res.header);
-                    setAlertItems(res.items);
-                }
-            })
-            .finally(() => setIsLoadingDetail(false));
     };
 
     const backToQueue = () => setSelectedReview(null);
-
-    const onOpenLogs = (item: AlertItem) => {
-        setActiveItem(item);
-        setIsLogsOpen(true);
-        if (cachedLogs) {
-            setLogs(cachedLogs);
-            return;
-        }
-        if (!selectedReview?.alertId) return;
-        setIsLogsLoading(true);
-        deviationApi
-            .getRunLogs(selectedReview.alertId)
-            .then((res) => {
-                const rows = res.success ? res.logs : [];
-                setCachedLogs(rows);
-                setLogs(rows);
-            })
-            .catch(() => setLogs([]))
-            .finally(() => setIsLogsLoading(false));
-    };
 
     const canDecide = rcaText.trim().length > 0 && elecSigConfirmed;
 
@@ -342,61 +282,7 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                     </div>
                 )}
 
-                {isLoadingDetail ? (
-                    <div className="flex min-h-40 items-center justify-center">
-                        <LoadingIndicator type="line-simple" size="sm" label="Loading alert context…" />
-                    </div>
-                ) : alertHeader ? (
-                    <>
-                        <div className="rounded-xl bg-primary p-6 ring-1 ring-secondary">
-                            <h2 className="mb-4 text-lg font-semibold text-primary">Alert Context Summary</h2>
-                            <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-                                <Field label="System & Client" value={`${alertHeader.systemId} (Client ${alertHeader.client})`} />
-                                <Field label="Sector / Platform" value={`${alertHeader.sector} / ${alertHeader.platform}`} />
-                                <Field label="Alert Date" value={formatTimestamp(alertHeader.alertDate)} />
-                                <Field label="Deviations" value={`${alertHeader.deviationCount} line deviations`} />
-                            </div>
-                        </div>
-
-                        <div className="rounded-xl bg-primary p-6 ring-1 ring-secondary">
-                            <h2 className="mb-4 text-lg font-semibold text-primary">Detailed Deviation Line Items</h2>
-                            {alertItems.length === 0 ? (
-                                <p className="py-6 text-center text-sm text-tertiary">No detailed deviation line items found.</p>
-                            ) : (
-                                <Table aria-label="Deviation line items">
-                                    <Table.Header>
-                                        <Table.Head id="sapObject" label="SAP Object" isRowHeader />
-                                        <Table.Head id="parameter" label="Parameter" />
-                                        <Table.Head id="expected" label="Expected" />
-                                        <Table.Head id="actual" label="Actual" />
-                                        <Table.Head id="status" label="Status" />
-                                        <Table.Head id="logs" />
-                                    </Table.Header>
-                                    <Table.Body items={alertItems}>
-                                        {(item) => (
-                                            <Table.Row id={item.id}>
-                                                <Table.Cell className="font-medium text-primary">{item.sapObject}</Table.Cell>
-                                                <Table.Cell>{item.parameter}</Table.Cell>
-                                                <Table.Cell>{item.expectedValue}</Table.Cell>
-                                                <Table.Cell className="font-medium text-primary">{item.actualValue}</Table.Cell>
-                                                <Table.Cell>
-                                                    <Badge color={badgeColorFor(item.status)} size="sm">
-                                                        {item.status}
-                                                    </Badge>
-                                                </Table.Cell>
-                                                <Table.Cell>
-                                                    <Button size="sm" onClick={() => onOpenLogs(item)}>
-                                                        Logs
-                                                    </Button>
-                                                </Table.Cell>
-                                            </Table.Row>
-                                        )}
-                                    </Table.Body>
-                                </Table>
-                            )}
-                        </div>
-                    </>
-                ) : null}
+                <AlertContext alertId={selectedReview.alertId} />
 
                 <div className="rounded-xl bg-primary p-6 ring-1 ring-secondary">
                     <h2 className="mb-4 text-lg font-semibold text-primary">Root Cause Analysis</h2>
@@ -428,54 +314,6 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                     </Button>
                     <Button onClick={onApproveClick}>{config.approveLabel}</Button>
                 </div>
-
-                {/* LOGS DIALOG */}
-                <ModalOverlay isOpen={isLogsOpen} onOpenChange={setIsLogsOpen}>
-                    <Modal>
-                        <Dialog>
-                            <div className="w-full max-w-2xl rounded-xl bg-primary p-6 shadow-xl ring-1 ring-secondary">
-                                <h3 className="text-lg font-semibold text-primary">
-                                    Automation Execution Logs {activeItem ? `— ${activeItem.sapObject}/${activeItem.parameter}` : ""}
-                                </h3>
-                                <div className="mt-4 max-h-96 overflow-y-auto">
-                                    {isLogsLoading ? (
-                                        <div className="flex min-h-40 items-center justify-center">
-                                            <LoadingIndicator type="line-simple" size="sm" label="Loading execution logs…" />
-                                        </div>
-                                    ) : logs.length === 0 ? (
-                                        <p className="py-6 text-center text-sm text-tertiary">No execution logs available.</p>
-                                    ) : (
-                                        <Table aria-label="Execution logs">
-                                            <Table.Header>
-                                                <Table.Head id="timestamp" label="Timestamp" isRowHeader />
-                                                <Table.Head id="level" label="Log Level" />
-                                                <Table.Head id="message" label="Message" />
-                                            </Table.Header>
-                                            <Table.Body items={logs}>
-                                                {(l) => (
-                                                    <Table.Row id={l.id}>
-                                                        <Table.Cell className="text-tertiary">{formatTimestamp(l.timestamp)}</Table.Cell>
-                                                        <Table.Cell>
-                                                            <Badge color={LEVEL_BADGE_COLOR[l.level] ?? "gray"} size="sm">
-                                                                {l.level}
-                                                            </Badge>
-                                                        </Table.Cell>
-                                                        <Table.Cell>{l.message}</Table.Cell>
-                                                    </Table.Row>
-                                                )}
-                                            </Table.Body>
-                                        </Table>
-                                    )}
-                                </div>
-                                <div className="mt-6 flex justify-end">
-                                    <Button color="secondary" onClick={() => setIsLogsOpen(false)}>
-                                        Close
-                                    </Button>
-                                </div>
-                            </div>
-                        </Dialog>
-                    </Modal>
-                </ModalOverlay>
 
                 {/* APPROVE CONFIRM */}
                 <ModalOverlay isOpen={isApproveOpen} onOpenChange={setIsApproveOpen}>
@@ -853,15 +691,6 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
         </div>
     );
 };
-
-function Field({ label, value }: { label: string; value: string }) {
-    return (
-        <div>
-            <div className="text-xs font-semibold text-tertiary">{label}</div>
-            <div className="mt-1 text-sm text-primary">{value}</div>
-        </div>
-    );
-}
 
 const STAT_TEXT_COLOR: Record<BadgeColors, string> = {
     gray: "text-primary",
