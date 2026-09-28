@@ -119,7 +119,7 @@ export const NotificationBell = () => {
             >
                 <Bell01 className="size-5" />
                 {items.length > 0 && (
-                    <span className="absolute top-1 right-1 flex size-3.5 items-center justify-center rounded-full bg-fg-error-primary text-[10px] font-bold text-white">
+                    <span className="pointer-events-none absolute -top-0.5 left-5 flex h-4 min-w-4 items-center justify-center rounded-full bg-fg-error-primary px-1 text-[10px] leading-none font-semibold text-white tabular-nums ring-2 ring-bg-primary">
                         {items.length > 9 ? "9+" : items.length}
                     </span>
                 )}
