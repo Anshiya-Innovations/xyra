@@ -97,6 +97,14 @@ export const AuditorPage = () => {
 
     const systemOptions = useMemo(() => [ALL, ...distinctOptions(closed.map((r) => r.systemId))], [closed]);
 
+    if (isLoading) {
+        return (
+            <div className="flex min-h-100 items-center justify-center">
+                <LoadingIndicator type="line-simple" size="md" label="Loading auditor dashboard…" />
+            </div>
+        );
+    }
+
     if (selected) return <ReviewReport review={selected} parentLabel="Auditor Dashboard" onBack={() => setSelected(null)} />;
 
     return (
@@ -117,8 +125,8 @@ export const AuditorPage = () => {
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 <StatCard label="Control Compliance Rate" value={kpi?.complianceRate ?? "—"} className="text-success-primary" />
                 <StatCard label="Deviation Alerts" value={kpi?.totalIncidents ?? "—"} />
-                <StatCard label="Open Remediation Tickets" value={isLoading ? "—" : openRemediations} className={openRemediations ? "text-error-primary" : "text-success-primary"} />
-                <StatCard label="Closed Reviews" value={isLoading ? "—" : closed.length} className="text-brand-secondary" />
+                <StatCard label="Open Remediation Tickets" value={openRemediations} className={openRemediations ? "text-error-primary" : "text-success-primary"} />
+                <StatCard label="Closed Reviews" value={closed.length} className="text-brand-secondary" />
             </div>
 
             <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as Tab)}>
@@ -153,9 +161,7 @@ export const AuditorPage = () => {
                             </Select>
                         </FilterCard>
 
-                        {isLoading ? (
-                            <Loading />
-                        ) : filteredRemediations.length === 0 ? (
+                        {filteredRemediations.length === 0 ? (
                             <Empty title="No remediation items" description="No rejected deviations with remediation tickets match these filters." />
                         ) : (
                             <TableCard.Root>
@@ -226,9 +232,7 @@ export const AuditorPage = () => {
                             </div>
                         </FilterCard>
 
-                        {isLoading ? (
-                            <Loading />
-                        ) : filteredHistory.length === 0 ? (
+                        {filteredHistory.length === 0 ? (
                             <Empty title="No history yet" description="No reviews matching these filters have reached a final outcome." />
                         ) : (
                             <TableCard.Root>
@@ -301,14 +305,6 @@ function FilterCard({ onReset, children }: { onReset: () => void; children: Reac
                 </Button>
             </div>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
-        </div>
-    );
-}
-
-function Loading() {
-    return (
-        <div className="flex min-h-60 items-center justify-center">
-            <LoadingIndicator type="line-simple" size="md" label="Loading…" />
         </div>
     );
 }
