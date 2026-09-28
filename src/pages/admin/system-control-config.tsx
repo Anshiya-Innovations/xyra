@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, SearchLg, Play } from "@untitledui/icons";
+import { Plus, SearchLg, Play, Trash01 } from "@untitledui/icons";
 import { useNavigate } from "react-router";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
@@ -7,7 +7,6 @@ import { ButtonUtility } from "@/components/base/buttons/button-utility";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { Toggle } from "@/components/base/toggle/toggle";
-import { Tooltip } from "@/components/base/tooltip/tooltip";
 import { Table, TableCard } from "@/components/application/table/table";
 import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import { EmptyState } from "@/components/application/empty-state/empty-state";
@@ -33,6 +32,9 @@ export const SystemControlConfigPage = () => {
     const [selectedControlId, setSelectedControlId] = useState<string | null>(null);
     const [selectedSystemId, setSelectedSystemId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    const [pendingDelete, setPendingDelete] = useState<SystemControlConfig | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const load = () => {
         setIsLoading(true);
@@ -123,6 +125,25 @@ export const SystemControlConfigPage = () => {
         }
     };
 
+    const onConfirmDelete = async () => {
+        if (!pendingDelete) return;
+        setIsDeleting(true);
+        try {
+            const res = await systemControlConfigApi.remove(pendingDelete.id);
+            if (!res.success) {
+                notify("error", res.message || "Could not delete this mapping.");
+                return;
+            }
+            setMappings((prev) => prev.filter((x) => x.id !== pendingDelete.id));
+            notify("success", `${pendingDelete.controlCode} will no longer run on ${pendingDelete.systemCode}.`);
+            setPendingDelete(null);
+        } catch {
+            notify("error", "Could not reach the server. Is xyra-core running?");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const onRunNow = async (m: SystemControlConfig) => {
         setBusyId(m.id);
         try {
@@ -188,7 +209,7 @@ export const SystemControlConfigPage = () => {
                             <Table.Head id="frequency" label="Frequency" />
                             <Table.Head id="status" label="Status" />
                             <Table.Head id="runs" label="Runs Completed" />
-                            <Table.Head id="actions" />
+                            <Table.Head id="actions" label="Actions" />
                         </Table.Header>
                         <Table.Body items={filtered}>
                             {(m) => (
@@ -228,14 +249,31 @@ export const SystemControlConfigPage = () => {
                                                 isDisabled={!m.enabled || busyId === m.id}
                                                 onClick={() => onRunNow(m)}
                                             />
-                                            <Tooltip title={m.enabled ? "Deactivate" : "Activate"}>
+                                            {/* Native title, not <Tooltip>: react-aria tooltips only attach to
+                                            focusable triggers (buttons/links), so it never showed on a Switch. */}
+                                            <div
+                                                className="flex px-1.5"
+                                                title={
+                                                    m.enabled
+                                                        ? "Active — click to deactivate (stops scheduled runs on this system)"
+                                                        : "Inactive — click to activate (resumes scheduled runs on this system)"
+                                                }
+                                            >
                                                 <Toggle
                                                     size="sm"
-                                                    aria-label={m.enabled ? "Deactivate" : "Activate"}
+                                                    aria-label={m.enabled ? "Deactivate mapping" : "Activate mapping"}
                                                     isSelected={m.enabled}
                                                     onChange={() => onToggleStatus(m)}
                                                 />
-                                            </Tooltip>
+                                            </div>
+                                            <ButtonUtility
+                                                size="sm"
+                                                color="tertiary-destructive"
+                                                icon={Trash01}
+                                                tooltip="Delete Mapping"
+                                                isDisabled={busyId === m.id}
+                                                onClick={() => setPendingDelete(m)}
+                                            />
                                         </div>
                                     </Table.Cell>
                                 </Table.Row>
@@ -301,6 +339,32 @@ export const SystemControlConfigPage = () => {
                                 </Button>
                                 <Button isLoading={isSaving} onClick={onSaveMapping}>
                                     Save Mapping
+                                </Button>
+                            </div>
+                        </div>
+                    </Dialog>
+                </Modal>
+            </ModalOverlay>
+
+            <ModalOverlay isOpen={!!pendingDelete} onOpenChange={(open) => !open && setPendingDelete(null)}>
+                <Modal>
+                    <Dialog>
+                        <div className="w-full max-w-md rounded-xl bg-primary p-6 shadow-xl ring-1 ring-secondary">
+                            <h3 className="text-lg font-semibold text-primary">Delete Control Mapping</h3>
+                            <p className="mt-2 text-sm text-tertiary">
+                                Delete the mapping of <span className="font-semibold text-primary">{pendingDelete?.controlCode}</span> on{" "}
+                                <span className="font-semibold text-primary">
+                                    {pendingDelete?.systemCode}/{pendingDelete?.systemClient}
+                                </span>
+                                ? The control will stop running on this system. The control itself and all past run history, deviations and logs are
+                                kept.
+                            </p>
+                            <div className="mt-6 flex justify-end gap-3">
+                                <Button color="secondary" onClick={() => setPendingDelete(null)}>
+                                    Cancel
+                                </Button>
+                                <Button color="primary-destructive" isLoading={isDeleting} onClick={onConfirmDelete}>
+                                    Delete
                                 </Button>
                             </div>
                         </div>

@@ -464,7 +464,7 @@ export const OrganizationDetailsPage = () => {
                                         </Table.Cell>
                                         <Table.Cell>
                                             <div className="flex justify-end">
-                                                <ButtonUtility size="sm" color="tertiary" icon={Trash01} tooltip="Remove Parameter" onClick={() => onRemoveParameter(p.id)} />
+                                                <ButtonUtility size="sm" color="tertiary-destructive" icon={Trash01} tooltip="Remove Parameter" onClick={() => onRemoveParameter(p.id)} />
                                             </div>
                                         </Table.Cell>
                                     </Table.Row>

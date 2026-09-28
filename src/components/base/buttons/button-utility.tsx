@@ -14,6 +14,8 @@ export const styles = {
     secondary:
         "bg-primary text-brand-secondary shadow-xs-skeuomorphic ring-1 ring-primary ring-inset hover:bg-brand-secondary hover:text-brand-secondary_hover disabled:shadow-xs",
     tertiary: "text-brand-secondary hover:bg-brand-secondary hover:text-brand-secondary_hover",
+    // Delete/remove row actions - red so they never read as a routine action.
+    "tertiary-destructive": "text-fg-error-secondary hover:bg-error-primary hover:text-fg-error-primary",
 };
 
 /**
@@ -25,7 +27,7 @@ export interface CommonProps {
     /** The size variant of the button */
     size?: "xs" | "sm";
     /** The color variant of the button */
-    color?: "secondary" | "tertiary";
+    color?: "secondary" | "tertiary" | "tertiary-destructive";
     /** The icon to display in the button */
     icon?: FC<{ className?: string }> | ReactNode;
     /** The tooltip to display when hovering over the button */

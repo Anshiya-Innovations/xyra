@@ -245,7 +245,7 @@ export const ControlEditorPage = () => {
                                     <Table.Cell>{rule.operator}</Table.Cell>
                                     <Table.Cell>{rule.expectedValue === "Custom" ? rule.customExpectedValue : rule.expectedValue}</Table.Cell>
                                     <Table.Cell>
-                                        <ButtonUtility size="sm" color="tertiary" icon={Trash01} tooltip="Delete Rule" onClick={() => removeRule(rule.key)} />
+                                        <ButtonUtility size="sm" color="tertiary-destructive" icon={Trash01} tooltip="Delete Rule" onClick={() => removeRule(rule.key)} />
                                     </Table.Cell>
                                 </Table.Row>
                             )}

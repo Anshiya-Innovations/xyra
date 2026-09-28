@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Bell01, Check, CheckCircle, Clock, LogIn03, Trash01 } from "@untitledui/icons";
+import { AlertTriangle, Bell01, Check, CheckCircle, Clock, LogIn03, Settings01, Trash01 } from "@untitledui/icons";
 import type { FC } from "react";
 import { Button as AriaButton, Dialog as AriaDialog, DialogTrigger as AriaDialogTrigger, Popover as AriaPopover } from "react-aria-components";
 import { useNavigate } from "react-router";
@@ -22,6 +22,7 @@ const TARGET_PAGE_ROUTES: Record<string, string> = {
     Configuration: "/configuration",
     SystemHealth: "/configuration",
     Profile: "/profile",
+    SystemControlConfig: "/system-control-config",
 };
 
 // Colored by what kind of thing happened, not by the backend's iconClass -
@@ -36,6 +37,7 @@ const CATEGORY_META: Record<string, { circle: string; icon: FC<{ className?: str
     TICKET: { circle: "bg-success-secondary text-success-primary", icon: CheckCircle },
     TASK: { circle: "bg-brand-secondary text-brand-secondary", icon: LogIn03 },
     REMINDER: { circle: "bg-warning-secondary text-warning-primary", icon: Clock },
+    CONFIG: { circle: "bg-warning-secondary text-warning-primary", icon: Settings01 },
 };
 const DEFAULT_META = { circle: "bg-secondary text-tertiary", icon: Bell01 };
 
@@ -43,12 +45,16 @@ const DEFAULT_META = { circle: "bg-secondary text-tertiary", icon: Bell01 };
 // separate roles - see lib/provisioning/seed.js), so filtering on role alone
 // covers both personas plus Admin. Escalation Manager/Auditor see everything
 // - matches xyra-web's NotificationService.js exactly.
-const RESTRICTED_ROLES = new Set(["REVIEWER", "ADMIN"]);
-const VISIBLE_CATEGORIES_FOR_RESTRICTED = new Set(["ALERT", "TICKET"]);
+// CONFIG (configuration changes, e.g. a control mapping deleted) is an
+// admin concern only - reviewers never see it.
+const VISIBLE_CATEGORIES_BY_ROLE: Record<string, Set<string>> = {
+    REVIEWER: new Set(["ALERT", "TICKET"]),
+    ADMIN: new Set(["ALERT", "TICKET", "CONFIG"]),
+};
 
 function filterForRole(notifications: NotificationEntry[], role: string | undefined): NotificationEntry[] {
-    if (!role || !RESTRICTED_ROLES.has(role)) return notifications;
-    return notifications.filter((n) => VISIBLE_CATEGORIES_FOR_RESTRICTED.has(n.category));
+    const visible = role ? VISIBLE_CATEGORIES_BY_ROLE[role] : undefined;
+    return visible ? notifications.filter((n) => visible.has(n.category)) : notifications;
 }
 
 function formatRelativeTime(iso: string): string {

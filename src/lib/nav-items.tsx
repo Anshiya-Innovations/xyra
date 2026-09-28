@@ -16,7 +16,7 @@ export const NAV_ITEMS: NavItemType[] = [
         ],
     },
     { label: "AI Insights", href: "/ai-insights", icon: Lightbulb02, badge: <Badge color="brand" size="sm">New</Badge> },
-    { label: "SOX Compliance", href: "/sox-compliance", icon: CheckVerified01, badge: <Badge color="success" size="sm">98.4%</Badge> },
+    { label: "SOX Compliance", href: "/sox-compliance", icon: CheckVerified01 },
     { label: "Reports", href: "/reports", icon: File06 },
     { label: "Audit Logs", href: "/audit-logs", icon: List },
     { label: "System Configuration", href: "/configuration", icon: Settings01 },

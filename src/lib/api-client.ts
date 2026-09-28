@@ -176,6 +176,8 @@ export const systemControlConfigApi = {
     runNow: (id: string) =>
         call<ActionResult & { deviationsFound: number; alertsCreated: number }>("system-control-config", "runSystemControlConfigNow", withAudit({ id })),
 
+    remove: (id: string) => call<ActionResult>("system-control-config", "deleteSystemControlConfig", withAudit({ id })),
+
     getDetail: (id: string) =>
         call<ActionResult & { detail: SystemControlConfig | null; logs: RunLog[] }>("system-control-config", "getSystemControlConfigDetail", { id }),
 };

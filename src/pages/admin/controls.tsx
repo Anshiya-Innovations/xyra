@@ -165,7 +165,7 @@ export const ControlsPage = () => {
                                                 />
                                                 <ButtonUtility
                                                     size="sm"
-                                                    color="tertiary"
+                                                    color="tertiary-destructive"
                                                     icon={Trash01}
                                                     tooltip="Delete"
                                                     onClick={() => setPendingDelete(control)}

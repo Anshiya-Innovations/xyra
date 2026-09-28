@@ -499,7 +499,7 @@ export const SystemConfigurationPage = () => {
                                                             onClick={() => onTestLandscapeRow(sys)}
                                                         />
                                                         <ButtonUtility size="sm" color="tertiary" icon={Edit01} tooltip="Edit System" onClick={() => openEdit(sys)} />
-                                                        <ButtonUtility size="sm" color="tertiary" icon={Trash01} tooltip="Delete System" onClick={() => setPendingDelete(sys)} />
+                                                        <ButtonUtility size="sm" color="tertiary-destructive" icon={Trash01} tooltip="Delete System" onClick={() => setPendingDelete(sys)} />
                                                     </div>
                                                 </Table.Cell>
                                             </Table.Row>

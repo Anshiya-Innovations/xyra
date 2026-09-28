@@ -40,12 +40,14 @@ const ACTION_OPTIONS: FilterOption[] = [
     { id: "CONTROL_RUN", label: "Control Run Now" },
     { id: "SYSTEM_CREATE", label: "System Created" },
     { id: "SYSTEM_UPDATE", label: "System Updated" },
+    { id: "SYSTEM_CONTROL_CONFIG_DELETE", label: "Control Mapping Deleted" },
 ];
 
 const MODULE_OPTIONS: FilterOption[] = [
     { id: "Authentication", label: "Authentication" },
     { id: "Control Management", label: "Control Management" },
     { id: "System Configuration", label: "System Configuration" },
+    { id: "System Control Config", label: "System Control Config" },
     { id: "Deviation Report", label: "Deviation Report" },
     { id: "Review", label: "Review" },
 ];

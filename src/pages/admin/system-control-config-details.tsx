@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle, Play, Stop } from "@untitledui/icons";
+import { ArrowLeft, CheckCircle, Play, Stop, Trash01 } from "@untitledui/icons";
 import { useNavigate, useParams } from "react-router";
+import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
+import { notify } from "@/components/application/notification/notification";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Table } from "@/components/application/table/table";
@@ -31,6 +33,7 @@ export const SystemControlConfigDetailsPage = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isBusy, setIsBusy] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
     const load = () => {
         if (!configId) return;
@@ -75,6 +78,26 @@ export const SystemControlConfigDetailsPage = () => {
             else setError(res.message || "Run failed.");
         } catch {
             setError("Could not reach the server to run this control.");
+        } finally {
+            setIsBusy(false);
+        }
+    };
+
+    const onDelete = async () => {
+        if (!detail) return;
+        setIsBusy(true);
+        try {
+            const res = await systemControlConfigApi.remove(detail.id);
+            if (!res.success) {
+                setIsDeleteOpen(false);
+                setError(res.message || "Could not delete this mapping.");
+                return;
+            }
+            notify("success", `${detail.controlCode} will no longer run on ${detail.systemCode}.`);
+            navigate("/system-control-config");
+        } catch {
+            setIsDeleteOpen(false);
+            setError("Could not reach the server. Is xyra-core running?");
         } finally {
             setIsBusy(false);
         }
@@ -125,7 +148,36 @@ export const SystemControlConfigDetailsPage = () => {
                     <Button color={detail.enabled ? "secondary-destructive" : "secondary"} iconLeading={detail.enabled ? Stop : CheckCircle} isLoading={isBusy} onClick={onToggleStatus}>
                         {detail.enabled ? "Deactivate" : "Activate"}
                     </Button>
+                    <Button color="primary-destructive" iconLeading={Trash01} isDisabled={isBusy} onClick={() => setIsDeleteOpen(true)}>
+                        Delete
+                    </Button>
                 </div>
+
+                <ModalOverlay isOpen={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                    <Modal>
+                        <Dialog>
+                            <div className="w-full max-w-md rounded-xl bg-primary p-6 shadow-xl ring-1 ring-secondary">
+                                <h3 className="text-lg font-semibold text-primary">Delete Control Mapping</h3>
+                                <p className="mt-2 text-sm text-tertiary">
+                                    Delete the mapping of <span className="font-semibold text-primary">{detail.controlCode}</span> on{" "}
+                                    <span className="font-semibold text-primary">
+                                        {detail.systemCode}/{detail.systemClient}
+                                    </span>
+                                    ? The control will stop running on this system. The control itself and all past run history, deviations and logs
+                                    are kept.
+                                </p>
+                                <div className="mt-6 flex justify-end gap-3">
+                                    <Button color="secondary" onClick={() => setIsDeleteOpen(false)}>
+                                        Cancel
+                                    </Button>
+                                    <Button color="primary-destructive" isLoading={isBusy} onClick={onDelete}>
+                                        Delete
+                                    </Button>
+                                </div>
+                            </div>
+                        </Dialog>
+                    </Modal>
+                </ModalOverlay>
             </div>
 
             {error && <p className="rounded-lg bg-error-secondary px-4 py-3 text-sm text-error-primary">{error}</p>}

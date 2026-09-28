@@ -16,6 +16,7 @@ import { OrganizationPage } from "@/pages/admin/organization";
 import { OrganizationDetailsPage } from "@/pages/admin/organization-details";
 import { PlaceholderPage } from "@/pages/admin/placeholder-page";
 import { ReportsPage } from "@/pages/admin/reports";
+import { SoxCompliancePage } from "@/pages/admin/sox-compliance";
 import { SystemConfigurationPage } from "@/pages/admin/system-configuration";
 import { SystemControlConfigPage } from "@/pages/admin/system-control-config";
 import { SystemControlConfigDetailsPage } from "@/pages/admin/system-control-config-details";
@@ -51,7 +52,7 @@ createRoot(document.getElementById("root")!).render(
                             <Route path="/deviation-report" element={<DeviationReportPage />} />
                             <Route path="/deviation-report/:alertId" element={<AlertItemPage />} />
                             <Route path="/ai-insights" element={<PlaceholderPage title="AI Insights" />} />
-                            <Route path="/sox-compliance" element={<PlaceholderPage title="SOX Compliance" />} />
+                            <Route path="/sox-compliance" element={<SoxCompliancePage />} />
                             <Route path="/reports" element={<ReportsPage />} />
                             <Route path="/audit-logs" element={<AuditLogsPage />} />
                             <Route path="/configuration" element={<SystemConfigurationPage />} />
