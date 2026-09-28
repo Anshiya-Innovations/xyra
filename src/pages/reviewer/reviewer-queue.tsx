@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, RefreshCw01, SearchLg } from "@untitledui/icons";
 import type { DateValue } from "react-aria-components";
-import { Badge } from "@/components/base/badges/badges";
+import { Breadcrumbs } from "@/components/application/breadcrumbs/breadcrumbs";
+import { DateRangePicker } from "@/components/application/date-picker/date-range-picker";
+import { EmptyState } from "@/components/application/empty-state/empty-state";
+import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
+import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
+import { notify } from "@/components/application/notification/notification";
+import { Table, TableCard } from "@/components/application/table/table";
+import { Tabs } from "@/components/application/tabs/tabs";
 import type { BadgeColors } from "@/components/base/badges/badge-types";
+import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { TextArea } from "@/components/base/textarea/textarea";
-import { Table, TableCard } from "@/components/application/table/table";
-import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
-import { Tabs } from "@/components/application/tabs/tabs";
-import { DateRangePicker } from "@/components/application/date-picker/date-range-picker";
-import { EmptyState } from "@/components/application/empty-state/empty-state";
-import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
-import { Breadcrumbs } from "@/components/application/breadcrumbs/breadcrumbs";
-import { notify } from "@/components/application/notification/notification";
 import {
     type AlertHeader,
     type AlertItem,
@@ -27,7 +27,7 @@ import {
     reviewApi,
     systemConfigApi,
 } from "@/lib/api-client";
-import { type ReviewerLevelConfig, REVIEWER_CONFIG } from "@/lib/reviewer-config";
+import { REVIEWER_CONFIG, type ReviewerLevelConfig } from "@/lib/reviewer-config";
 import { getSession } from "@/lib/session";
 
 const SEVERITY_BADGE_COLOR: Record<string, BadgeColors> = { critical: "error", high: "error", medium: "warning", low: "success" };
@@ -127,7 +127,10 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
 
     useEffect(() => {
         load();
-        systemConfigApi.list().then((res) => res.success && setSystems(res.systems)).catch(() => {});
+        systemConfigApi
+            .list()
+            .then((res) => res.success && setSystems(res.systems))
+            .catch(() => {});
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [level]);
 
@@ -483,7 +486,8 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                 <p className="mt-2 rounded-lg bg-secondary px-4 py-3 text-sm text-secondary ring-1 ring-secondary">{config.approveNote}</p>
                                 <div className="mt-4 flex flex-col gap-2 text-sm">
                                     <div>
-                                        <span className="font-semibold text-primary">Control:</span> {selectedReview.controlId} — {selectedReview.controlDescription}
+                                        <span className="font-semibold text-primary">Control:</span> {selectedReview.controlId} —{" "}
+                                        {selectedReview.controlDescription}
                                     </div>
                                     <div>
                                         <span className="font-semibold text-primary">System:</span> {selectedReview.systemId}
@@ -516,7 +520,8 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                 </p>
                                 <div className="mt-4 flex flex-col gap-2 text-sm">
                                     <div>
-                                        <span className="font-semibold text-primary">Control:</span> {selectedReview.controlId} — {selectedReview.controlDescription}
+                                        <span className="font-semibold text-primary">Control:</span> {selectedReview.controlId} —{" "}
+                                        {selectedReview.controlDescription}
                                     </div>
                                     <div>
                                         <span className="font-semibold text-primary">Root Cause Analysis:</span> {rcaText}
@@ -574,8 +579,19 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                 </Button>
                             </div>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <Input aria-label="Search" icon={SearchLg} placeholder="Search Control ID, Description..." value={queueQuery} onChange={setQueueQuery} />
-                                <Select label="System" selectedKey={queueSystem} onSelectionChange={(k) => setQueueSystem(k as string)} items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}>
+                                <Input
+                                    label="Search"
+                                    icon={SearchLg}
+                                    placeholder="Search Control ID, Description..."
+                                    value={queueQuery}
+                                    onChange={setQueueQuery}
+                                />
+                                <Select
+                                    label="System"
+                                    selectedKey={queueSystem}
+                                    onSelectionChange={(k) => setQueueSystem(k as string)}
+                                    items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
                             </div>
@@ -600,7 +616,14 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                             </div>
                         ) : (
                             <TableCard.Root>
-                                <TableCard.Header title={config.queueTitle} badge={<Badge color="gray" size="sm">{filteredQueue.length}</Badge>} />
+                                <TableCard.Header
+                                    title={config.queueTitle}
+                                    badge={
+                                        <Badge color="gray" size="sm">
+                                            {filteredQueue.length}
+                                        </Badge>
+                                    }
+                                />
                                 <Table aria-label="Review queue">
                                     <Table.Header>
                                         <Table.Head id="controlId" label="Control ID" isRowHeader />
@@ -670,15 +693,36 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                 </Button>
                             </div>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                                <Input aria-label="Search" icon={SearchLg} placeholder="Search Control ID, Ticket..." value={historyQuery} onChange={setHistoryQuery} />
-                                <Input aria-label="Control ID" placeholder="Control ID" value={historyControlId} onChange={setHistoryControlId} />
-                                <Select label="System" selectedKey={historySystem} onSelectionChange={(k) => setHistorySystem(k as string)} items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}>
+                                <Input
+                                    label="Search"
+                                    icon={SearchLg}
+                                    placeholder="Search Control ID, Ticket..."
+                                    value={historyQuery}
+                                    onChange={setHistoryQuery}
+                                />
+                                <Input label="Control ID" placeholder="Control ID" value={historyControlId} onChange={setHistoryControlId} />
+                                <Select
+                                    label="System"
+                                    selectedKey={historySystem}
+                                    onSelectionChange={(k) => setHistorySystem(k as string)}
+                                    items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
-                                <Select label="Decision" selectedKey={historyDecision} onSelectionChange={(k) => setHistoryDecision(k as string)} items={[ALL, { id: "Approved", label: "Approved" }, { id: "Rejected", label: "Rejected" }]}>
+                                <Select
+                                    label="Decision"
+                                    selectedKey={historyDecision}
+                                    onSelectionChange={(k) => setHistoryDecision(k as string)}
+                                    items={[ALL, { id: "Approved", label: "Approved" }, { id: "Rejected", label: "Rejected" }]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
-                                <Select label="Ticket Status" selectedKey={historyTicketStatus} onSelectionChange={(k) => setHistoryTicketStatus(k as string)} items={[ALL, ...historyTicketStatusOptions]}>
+                                <Select
+                                    label="Ticket Status"
+                                    selectedKey={historyTicketStatus}
+                                    onSelectionChange={(k) => setHistoryTicketStatus(k as string)}
+                                    items={[ALL, ...historyTicketStatusOptions]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
                                 <div className="col-span-2 flex flex-col gap-1.5">
@@ -702,7 +746,14 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                             </div>
                         ) : (
                             <TableCard.Root>
-                                <TableCard.Header title="Reviewer History" badge={<Badge color="gray" size="sm">{filteredHistory.length}</Badge>} />
+                                <TableCard.Header
+                                    title="Reviewer History"
+                                    badge={
+                                        <Badge color="gray" size="sm">
+                                            {filteredHistory.length}
+                                        </Badge>
+                                    }
+                                />
                                 <Table aria-label="Reviewer history">
                                     <Table.Header>
                                         <Table.Head id="ticket" label="Ticket" isRowHeader />
@@ -720,7 +771,11 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                                 <Table.Row id={review.id}>
                                                     <Table.Cell>
                                                         {review.ticketUrl ? (
-                                                            <button type="button" className="cursor-pointer font-medium text-brand-secondary hover:underline" onClick={() => window.open(review.ticketUrl, "_blank")}>
+                                                            <button
+                                                                type="button"
+                                                                className="cursor-pointer font-medium text-brand-secondary hover:underline"
+                                                                onClick={() => window.open(review.ticketUrl, "_blank")}
+                                                            >
                                                                 {review.ticketNumber}
                                                             </button>
                                                         ) : (
@@ -775,7 +830,10 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                         <Field label="Ticket Status" value={selectedHistoryItem.ticketStatus || "—"} />
                                         <Field label="System" value={selectedHistoryItem.systemId} />
                                         <Field label="Reviewed Date" value={formatTimestamp(atFieldFor(selectedHistoryItem, level))} />
-                                        <Field label="Reviewed By" value={level === 1 ? selectedHistoryItem.reviewer1ByName : selectedHistoryItem.reviewer2ByName} />
+                                        <Field
+                                            label="Reviewed By"
+                                            value={level === 1 ? selectedHistoryItem.reviewer1ByName : selectedHistoryItem.reviewer2ByName}
+                                        />
                                     </div>
                                     <div className="mt-4">
                                         <div className="text-xs font-semibold text-tertiary">Root Cause Analysis</div>
