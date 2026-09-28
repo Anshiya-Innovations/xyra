@@ -5,7 +5,7 @@ import { NotificationBell } from "@/components/application/app-navigation/notifi
 import { ProfileMenu } from "@/components/application/app-navigation/profile-menu";
 import { SidebarNavigationSimple } from "@/components/application/app-navigation/sidebar-navigation/sidebar-simple";
 import { NotificationRegion } from "@/components/application/notification/notification";
-import { ESCALATION_MANAGER_NAV_ITEMS, NAV_ITEMS, reviewerNavItems } from "@/lib/nav-items";
+import { NAV_ITEMS } from "@/lib/nav-items";
 import { clearSession, getSession } from "@/lib/session";
 
 export const AppShell = ({ children }: { children: ReactNode }) => {
@@ -35,12 +35,12 @@ export const AppShell = ({ children }: { children: ReactNode }) => {
 
     // Reviewer/Escalation Manager have only one real destination each - a
     // full sidebar (search box, ~10 collapsible sections) is built for the
-    // admin app and would be empty chrome around a single link here.
+    // admin app and would be empty chrome around a single link here. No nav
+    // links at all - the page itself is the only destination.
     if (session?.role === "REVIEWER" || session?.role === "ESCALATION_MANAGER") {
-        const items = session.role === "REVIEWER" ? reviewerNavItems(location.pathname.startsWith("/reviewer-2") ? 2 : 1) : ESCALATION_MANAGER_NAV_ITEMS;
         return (
             <div className="flex min-h-dvh flex-col bg-secondary">
-                <HeaderNavigationSimple activeUrl={location.pathname} items={items} account={account} onSignOut={onSignOut} />
+                <HeaderNavigationSimple activeUrl={location.pathname} items={[]} account={account} onSignOut={onSignOut} />
                 <main className="min-w-0 flex-1 p-4 lg:p-8">{children}</main>
                 <NotificationRegion />
             </div>
