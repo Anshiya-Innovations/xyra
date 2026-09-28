@@ -171,6 +171,7 @@ export const OrganizationPage = () => {
                             <Input size="sm" aria-label="Search organizations" icon={SearchLg} placeholder="Search Organization / Company ID..." value={query} onChange={setQuery} />
                             <Select
                                 size="sm"
+                                className="w-52 shrink-0"
                                 aria-label="Status filter"
                                 selectedKey={statusFilter}
                                 onSelectionChange={(k) => setStatusFilter(k as string)}
@@ -180,6 +181,7 @@ export const OrganizationPage = () => {
                             </Select>
                             <Select
                                 size="sm"
+                                className="w-52 shrink-0"
                                 aria-label="Region filter"
                                 selectedKey={regionFilter}
                                 onSelectionChange={(k) => setRegionFilter(k as string)}
