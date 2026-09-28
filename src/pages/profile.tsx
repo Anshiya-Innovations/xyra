@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { RefreshCw01, Save01 } from "@untitledui/icons";
+import { ArrowLeft, RefreshCw01, Save01 } from "@untitledui/icons";
+import { useNavigate } from "react-router";
 import { Avatar } from "@/components/base/avatar/avatar";
 import { Badge } from "@/components/base/badges/badges";
 import { Button } from "@/components/base/buttons/button";
@@ -16,8 +17,19 @@ function toForm(p: ProfileEntry): FormState {
     return { name: p.name || "", phone: p.phone || "", department: p.department || "", organization: p.organization || "" };
 }
 
+// Where "Back" lands when there's no in-app history (profile opened directly
+// by URL or in a new tab) - each persona's own home page.
+const HOME_BY_ROLE: Record<string, string> = {
+    REVIEWER: "/reviewer-1",
+    ESCALATION_MANAGER: "/escalation-manager",
+    AUDITOR: "/auditor",
+};
+
 export const ProfilePage = () => {
     const session = getSession();
+    const navigate = useNavigate();
+    // react-router stores the in-app history index as `idx`; 0 means this was the first page loaded.
+    const goBack = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate(HOME_BY_ROLE[session?.role ?? ""] ?? "/dashboard"));
     const [profile, setProfile] = useState<ProfileEntry | null>(null);
     const [form, setForm] = useState<FormState>({ name: "", phone: "", department: "", organization: "" });
     const [isLoading, setIsLoading] = useState(true);
@@ -115,9 +127,14 @@ export const ProfilePage = () => {
         return (
             <div className="flex flex-col gap-4">
                 <p className="rounded-lg bg-error-secondary px-4 py-3 text-sm text-error-primary">{error || "Could not load your profile."}</p>
-                <Button color="secondary" iconLeading={RefreshCw01} onClick={load} className="w-fit">
-                    Retry
-                </Button>
+                <div className="flex gap-3">
+                    <Button color="secondary" iconLeading={ArrowLeft} onClick={goBack}>
+                        Back
+                    </Button>
+                    <Button color="secondary" iconLeading={RefreshCw01} onClick={load}>
+                        Retry
+                    </Button>
+                </div>
             </div>
         );
     }
@@ -133,6 +150,9 @@ export const ProfilePage = () => {
         <div className="flex flex-col gap-6">
             <Breadcrumbs items={[{ label: "Profile" }]} />
             <div className="flex flex-col gap-1">
+                <Button color="link-gray" size="sm" iconLeading={ArrowLeft} onClick={goBack} className="w-fit">
+                    Back
+                </Button>
                 <h1 className="text-display-xs font-semibold text-primary">User Profile & Account Settings</h1>
                 <p className="text-md text-tertiary">Manage your user details and security credentials.</p>
             </div>
