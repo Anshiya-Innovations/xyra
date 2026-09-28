@@ -20,6 +20,8 @@ import { type ReviewEntry, type SystemEntry, auditLogApi, reviewApi, systemConfi
 import { REVIEWER_CONFIG, type ReviewerLevelConfig } from "@/lib/reviewer-config";
 import { getSession } from "@/lib/session";
 import { AlertContext, Field, formatTimestamp } from "./alert-context";
+import { SlaBadge } from "./review-report";
+import { severityRank, toTime, useTableSort } from "@/hooks/use-table-sort";
 
 const SEVERITY_BADGE_COLOR: Record<string, BadgeColors> = { critical: "error", high: "error", medium: "warning", low: "success" };
 const badgeColorFor = (status: string) => SEVERITY_BADGE_COLOR[(status || "").toLowerCase()] ?? "gray";
@@ -151,6 +153,24 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
             return true;
         });
     }, [history, historyQuery, historyControlId, historySystem, historyDecision, historyTicketStatus, dateRange, level]);
+
+    const queueSort = useTableSort(filteredQueue, {
+        controlId: (r) => r.controlId,
+        system: (r) => `${r.systemId}/${r.client}`,
+        generatedDate: (r) => toTime(r.generatedDate),
+        rev1Decision: (r) => DECISION_LABEL[r.reviewer1Status] || r.reviewer1Status,
+        severity: (r) => severityRank(r.severity),
+        sla: (r) => toTime(r.slaDeadline),
+    });
+
+    const historySort = useTableSort(filteredHistory, {
+        ticket: (r) => r.ticketNumber,
+        controlId: (r) => r.controlId,
+        system: (r) => `${r.systemId}/${r.client}`,
+        decision: (r) => DECISION_LABEL[statusFieldFor(r, level)] || statusFieldFor(r, level),
+        reviewedDate: (r) => toTime(atFieldFor(r, level)),
+        ticketStatus: (r) => r.ticketStatus,
+    });
 
     const historyKpis = useMemo(() => {
         let approved = 0;
@@ -462,17 +482,17 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                         </Badge>
                                     }
                                 />
-                                <Table aria-label="Review queue">
+                                <Table aria-label="Review queue" sortDescriptor={queueSort.sortDescriptor} onSortChange={queueSort.onSortChange}>
                                     <Table.Header>
-                                        <Table.Head id="controlId" label="Control ID" isRowHeader />
-                                        <Table.Head id="system" label="System" />
-                                        <Table.Head id="generatedDate" label="Generated Date" />
-                                        {config.showReviewer1Summary && <Table.Head id="rev1Decision" label="Reviewer 1 Decision" />}
-                                        <Table.Head id="severity" label="Severity" />
-                                        <Table.Head id="sla" label="SLA" />
+                                        <Table.Head allowsSorting id="controlId" label="Control ID" isRowHeader />
+                                        <Table.Head allowsSorting id="system" label="System" />
+                                        <Table.Head allowsSorting id="generatedDate" label="Generated Date" />
+                                        {config.showReviewer1Summary && <Table.Head allowsSorting id="rev1Decision" label="Reviewer 1 Decision" />}
+                                        <Table.Head allowsSorting id="severity" label="Severity" />
+                                        <Table.Head allowsSorting id="sla" label="SLA" />
                                         <Table.Head id="actions" />
                                     </Table.Header>
-                                    <Table.Body items={filteredQueue}>
+                                    <Table.Body items={queueSort.sorted}>
                                         {(review) => (
                                             <Table.Row id={review.id}>
                                                 <Table.Cell className="font-medium text-primary">
@@ -494,9 +514,7 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                                     </Badge>
                                                 </Table.Cell>
                                                 <Table.Cell>
-                                                    <Badge color={review.isOverdue ? "error" : "success"} size="sm">
-                                                        {review.isOverdue ? `Overdue (${review.daysPending}d)` : `${review.daysPending ?? 0}d pending`}
-                                                    </Badge>
+                                                    <SlaBadge review={review} />
                                                 </Table.Cell>
                                                 <Table.Cell>
                                                     <div className="flex justify-end">
@@ -592,17 +610,17 @@ export const ReviewerQueuePage = ({ level }: { level: 1 | 2 }) => {
                                         </Badge>
                                     }
                                 />
-                                <Table aria-label="Reviewer history">
+                                <Table aria-label="Reviewer history" sortDescriptor={historySort.sortDescriptor} onSortChange={historySort.onSortChange}>
                                     <Table.Header>
-                                        <Table.Head id="ticket" label="Ticket" isRowHeader />
-                                        <Table.Head id="controlId" label="Control ID" />
-                                        <Table.Head id="system" label="System" />
-                                        <Table.Head id="decision" label="Decision" />
-                                        <Table.Head id="reviewedDate" label="Reviewed Date" />
-                                        <Table.Head id="ticketStatus" label="Ticket Status" />
+                                        <Table.Head allowsSorting id="ticket" label="Ticket" isRowHeader />
+                                        <Table.Head allowsSorting id="controlId" label="Control ID" />
+                                        <Table.Head allowsSorting id="system" label="System" />
+                                        <Table.Head allowsSorting id="decision" label="Decision" />
+                                        <Table.Head allowsSorting id="reviewedDate" label="Reviewed Date" />
+                                        <Table.Head allowsSorting id="ticketStatus" label="Ticket Status" />
                                         <Table.Head id="actions" />
                                     </Table.Header>
-                                    <Table.Body items={filteredHistory}>
+                                    <Table.Body items={historySort.sorted}>
                                         {(review) => {
                                             const status = statusFieldFor(review, level);
                                             return (

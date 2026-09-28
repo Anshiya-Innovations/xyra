@@ -11,6 +11,35 @@ export const badgeColorFor = (status: string) => SEVERITY_BADGE_COLOR[(status ||
 export const DECISION_BADGE_COLOR: Record<string, BadgeColors> = { APPROVE: "success", REMEDIATE: "error" };
 export const DECISION_LABEL: Record<string, string> = { APPROVE: "Approved", REMEDIATE: "Rejected" };
 
+const HOUR = 60 * 60 * 1000;
+const DAY = 24 * HOUR;
+const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
+
+// Human SLA wording from the backend's slaDeadline (already business-day
+// adjusted): "Due in 3 days" / "Due in 5 hours" / "Overdue by 2 days". Amber
+// once less than a day is left. `title` is the exact deadline for a tooltip.
+export function slaLabel(review: Pick<ReviewEntry, "slaDeadline" | "isOverdue">, now = Date.now()): { text: string; color: BadgeColors; title: string } {
+    if (!review.slaDeadline) return { text: "—", color: "gray", title: "No active SLA" };
+    const deadline = new Date(review.slaDeadline).getTime();
+    const diff = deadline - now;
+    const title = `SLA deadline: ${new Date(deadline).toLocaleString()}`;
+    const span = Math.abs(diff);
+    const amount = span < DAY ? plural(Math.max(1, Math.floor(span / HOUR)), "hour") : plural(Math.floor(span / DAY), "day");
+    if (diff < 0 || review.isOverdue) return { text: `Overdue by ${amount}`, color: "error", title };
+    return { text: `Due in ${amount}`, color: diff < DAY ? "warning" : "success", title };
+}
+
+export function SlaBadge({ review }: { review: Pick<ReviewEntry, "slaDeadline" | "isOverdue"> }) {
+    const sla = slaLabel(review);
+    return (
+        <span title={sla.title}>
+            <Badge color={sla.color} size="sm">
+                {sla.text}
+            </Badge>
+        </span>
+    );
+}
+
 // Every closed review is terminal at whichever level actually decided it -
 // Level 2 rows always have a terminal reviewer2Status (listLevel2History's own
 // predicate); Level 1-only rows (rejected before ever reaching Level 2) are
@@ -94,7 +123,7 @@ export function ReviewReport({ review, parentLabel, onBack }: { review: ReviewEn
                     <Field label="Stage" value={stage} />
                     <Field label="Generated Date" value={formatTimestamp(review.generatedDate)} />
                     <Field label="Days Pending" value={isClosed ? "—" : String(review.daysPending ?? 0)} />
-                    <Field label="SLA" value={isClosed ? "—" : review.isOverdue ? "Overdue" : "On Track"} />
+                    <Field label="SLA" value={isClosed ? "—" : `${slaLabel(review).text}${review.slaDeadline ? ` (${formatTimestamp(review.slaDeadline)})` : ""}`} />
                 </div>
             </div>
 

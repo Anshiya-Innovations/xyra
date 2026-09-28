@@ -15,7 +15,7 @@ import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
 import { type ReviewEntry, type SystemEntry, reviewApi, systemConfigApi } from "@/lib/api-client";
 import { formatTimestamp } from "@/pages/reviewer/alert-context";
-import { DECISION_BADGE_COLOR, DECISION_LABEL, ReviewReport, badgeColorFor, terminalAt, terminalStatus } from "@/pages/reviewer/review-report";
+import { DECISION_BADGE_COLOR, DECISION_LABEL, ReviewReport, SlaBadge, badgeColorFor, slaLabel, terminalAt, terminalStatus } from "@/pages/reviewer/review-report";
 
 type FilterOption = { id: string; label: string };
 const ALL: FilterOption = { id: "All", label: "All" };
@@ -154,7 +154,7 @@ export const EscalationManagerPage = () => {
             "Reviewer 1 Status",
             "Reviewer 2 Status",
             "Days Pending",
-            "Overdue",
+            "SLA",
             "Escalation Due",
         ].join(",");
         const rows = filteredPending.map((r) =>
@@ -167,7 +167,7 @@ export const EscalationManagerPage = () => {
                 toCsvCell(r.reviewer1Status),
                 toCsvCell(r.reviewer2Status),
                 toCsvCell(String(r.daysPending ?? "")),
-                toCsvCell(r.isOverdue ? "Yes" : "No"),
+                toCsvCell(slaLabel(r).text),
                 toCsvCell(r.escalationDue ? "Yes" : "No"),
             ].join(","),
         );
@@ -303,9 +303,7 @@ export const EscalationManagerPage = () => {
                                                     </Badge>
                                                 </Table.Cell>
                                                 <Table.Cell>
-                                                    <Badge color={review.isOverdue ? "error" : "success"} size="sm">
-                                                        {review.isOverdue ? `Overdue (${review.daysPending}d)` : `${review.daysPending ?? 0}d pending`}
-                                                    </Badge>
+                                                    <SlaBadge review={review} />
                                                 </Table.Cell>
                                                 <Table.Cell>
                                                     {review.escalationDue && (
