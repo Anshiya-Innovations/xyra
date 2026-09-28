@@ -368,6 +368,31 @@ export const deviationApi = {
         call<ActionResult & { header: AlertHeader | null; items: AlertItem[] }>("deviation", "getDeviationDetail", { alertId }),
 
     getRunLogs: (alertId: string) => call<ActionResult & { logs: RunLogEntry[] }>("deviation", "getRunLogs", { alertId }),
+
+    getComplianceInsights: () =>
+        call<ActionResult & { totalChecks: number; passedChecks: number; rules: RuleCheckStat[] }>("deviation", "getComplianceInsights"),
+};
+
+// One rule on one system, aggregated over all of its run history.
+export type RuleCheckStat = {
+    controlId: string;
+    controlDescription: string;
+    controlSeverity: string;
+    controlExists: boolean;
+    systemId: string;
+    client: string;
+    systemExists: boolean;
+    sapObject: string;
+    parameter: string;
+    operator: string;
+    expectedValue: string;
+    lastActualValue: string | null;
+    lastPassed: boolean;
+    lastUnreachable: boolean;
+    lastMessage: string;
+    lastCheckedAt: string;
+    checkCount: number;
+    failCount: number;
 };
 
 export type ReviewEntry = {

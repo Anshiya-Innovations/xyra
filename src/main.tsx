@@ -6,6 +6,7 @@ import { NotFound } from "@/pages/not-found";
 import { LoginPage } from "@/pages/login";
 import { ProfilePage } from "@/pages/profile";
 import { AccessManagementPage } from "@/pages/admin/access-management";
+import { AiInsightsPage } from "@/pages/admin/ai-insights";
 import { AlertItemPage } from "@/pages/admin/alert-item";
 import { AuditLogsPage } from "@/pages/admin/audit-logs";
 import { ControlEditorPage } from "@/pages/admin/control-editor";
@@ -51,7 +52,7 @@ createRoot(document.getElementById("root")!).render(
                             <Route path="/system-control-config/:configId" element={<SystemControlConfigDetailsPage />} />
                             <Route path="/deviation-report" element={<DeviationReportPage />} />
                             <Route path="/deviation-report/:alertId" element={<AlertItemPage />} />
-                            <Route path="/ai-insights" element={<PlaceholderPage title="AI Insights" />} />
+                            <Route path="/ai-insights" element={<AiInsightsPage />} />
                             <Route path="/sox-compliance" element={<SoxCompliancePage />} />
                             <Route path="/reports" element={<ReportsPage />} />
                             <Route path="/audit-logs" element={<AuditLogsPage />} />
