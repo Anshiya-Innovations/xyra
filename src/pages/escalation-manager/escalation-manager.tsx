@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 import { Download01, RefreshCw01, SearchLg } from "@untitledui/icons";
 import type { DateValue } from "react-aria-components";
-import { Badge } from "@/components/base/badges/badges";
-import type { BadgeColors } from "@/components/base/badges/badge-types";
-import { Button } from "@/components/base/buttons/button";
-import { Input } from "@/components/base/input/input";
-import { Select } from "@/components/base/select/select";
-import { Table, TableCard } from "@/components/application/table/table";
-import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
-import { Tabs } from "@/components/application/tabs/tabs";
+import { Breadcrumbs } from "@/components/application/breadcrumbs/breadcrumbs";
 import { DateRangePicker } from "@/components/application/date-picker/date-range-picker";
 import { EmptyState } from "@/components/application/empty-state/empty-state";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
-import { Breadcrumbs } from "@/components/application/breadcrumbs/breadcrumbs";
+import { Dialog, Modal, ModalOverlay } from "@/components/application/modals/modal";
 import { notify } from "@/components/application/notification/notification";
+import { Table, TableCard } from "@/components/application/table/table";
+import { Tabs } from "@/components/application/tabs/tabs";
+import type { BadgeColors } from "@/components/base/badges/badge-types";
+import { Badge } from "@/components/base/badges/badges";
+import { Button } from "@/components/base/buttons/button";
+import { Input } from "@/components/base/input/input";
+import { Select } from "@/components/base/select/select";
 import { type ReviewEntry, type SystemEntry, reviewApi, systemConfigApi } from "@/lib/api-client";
 
 const SEVERITY_BADGE_COLOR: Record<string, BadgeColors> = { critical: "error", high: "error", medium: "warning", low: "success" };
@@ -95,7 +95,10 @@ export const EscalationManagerPage = () => {
 
     useEffect(() => {
         load();
-        systemConfigApi.list().then((res) => res.success && setSystems(res.systems)).catch(() => {});
+        systemConfigApi
+            .list()
+            .then((res) => res.success && setSystems(res.systems))
+            .catch(() => {});
     }, []);
 
     const filteredPending = useMemo(() => {
@@ -164,7 +167,18 @@ export const EscalationManagerPage = () => {
             notify("error", "No pending deviations available to export.");
             return;
         }
-        const header = ["Control ID", "Description", "System", "Generated Date", "Severity", "Reviewer 1 Status", "Reviewer 2 Status", "Days Pending", "Overdue", "Escalation Due"].join(",");
+        const header = [
+            "Control ID",
+            "Description",
+            "System",
+            "Generated Date",
+            "Severity",
+            "Reviewer 1 Status",
+            "Reviewer 2 Status",
+            "Days Pending",
+            "Overdue",
+            "Escalation Due",
+        ].join(",");
         const rows = filteredPending.map((r) =>
             [
                 toCsvCell(r.controlId),
@@ -244,8 +258,19 @@ export const EscalationManagerPage = () => {
                                 </div>
                             </div>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <Input aria-label="Search" icon={SearchLg} placeholder="Search Control ID, Description..." value={pendingQuery} onChange={setPendingQuery} />
-                                <Select label="System" selectedKey={pendingSystem} onSelectionChange={(k) => setPendingSystem(k as string)} items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}>
+                                <Input
+                                    label="Search"
+                                    icon={SearchLg}
+                                    placeholder="Search Control ID, Description..."
+                                    value={pendingQuery}
+                                    onChange={setPendingQuery}
+                                />
+                                <Select
+                                    label="System"
+                                    selectedKey={pendingSystem}
+                                    onSelectionChange={(k) => setPendingSystem(k as string)}
+                                    items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
                             </div>
@@ -265,7 +290,14 @@ export const EscalationManagerPage = () => {
                             </div>
                         ) : (
                             <TableCard.Root>
-                                <TableCard.Header title="Pending Deviations" badge={<Badge color="gray" size="sm">{filteredPending.length}</Badge>} />
+                                <TableCard.Header
+                                    title="Pending Deviations"
+                                    badge={
+                                        <Badge color="gray" size="sm">
+                                            {filteredPending.length}
+                                        </Badge>
+                                    }
+                                />
                                 <Table aria-label="Pending deviations">
                                     <Table.Header>
                                         <Table.Head id="controlId" label="Control ID" isRowHeader />
@@ -295,7 +327,13 @@ export const EscalationManagerPage = () => {
                                                         {review.isOverdue ? `Overdue (${review.daysPending}d)` : `${review.daysPending ?? 0}d pending`}
                                                     </Badge>
                                                 </Table.Cell>
-                                                <Table.Cell>{review.escalationDue && <Badge color="error" size="sm">Escalation Due</Badge>}</Table.Cell>
+                                                <Table.Cell>
+                                                    {review.escalationDue && (
+                                                        <Badge color="error" size="sm">
+                                                            Escalation Due
+                                                        </Badge>
+                                                    )}
+                                                </Table.Cell>
                                                 <Table.Cell>
                                                     <div className="flex justify-end">
                                                         <Button color="secondary" size="sm" onClick={() => setSelectedReport(review)}>
@@ -329,14 +367,35 @@ export const EscalationManagerPage = () => {
                                 </Button>
                             </div>
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-                                <Input aria-label="Search" icon={SearchLg} placeholder="Search Control ID, Ticket..." value={historyQuery} onChange={setHistoryQuery} />
-                                <Select label="System" selectedKey={historySystem} onSelectionChange={(k) => setHistorySystem(k as string)} items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}>
+                                <Input
+                                    label="Search"
+                                    icon={SearchLg}
+                                    placeholder="Search Control ID, Ticket..."
+                                    value={historyQuery}
+                                    onChange={setHistoryQuery}
+                                />
+                                <Select
+                                    label="System"
+                                    selectedKey={historySystem}
+                                    onSelectionChange={(k) => setHistorySystem(k as string)}
+                                    items={[ALL, ...distinctOptions(systems.map((s) => s.sysId))]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
-                                <Select label="Decision" selectedKey={historyDecision} onSelectionChange={(k) => setHistoryDecision(k as string)} items={[ALL, { id: "Approved", label: "Approved" }, { id: "Rejected", label: "Rejected" }]}>
+                                <Select
+                                    label="Decision"
+                                    selectedKey={historyDecision}
+                                    onSelectionChange={(k) => setHistoryDecision(k as string)}
+                                    items={[ALL, { id: "Approved", label: "Approved" }, { id: "Rejected", label: "Rejected" }]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
-                                <Select label="Ticket Status" selectedKey={historyTicketStatus} onSelectionChange={(k) => setHistoryTicketStatus(k as string)} items={[ALL, ...historyTicketStatusOptions]}>
+                                <Select
+                                    label="Ticket Status"
+                                    selectedKey={historyTicketStatus}
+                                    onSelectionChange={(k) => setHistoryTicketStatus(k as string)}
+                                    items={[ALL, ...historyTicketStatusOptions]}
+                                >
                                     {(item) => <Select.Item id={item.id}>{item.label}</Select.Item>}
                                 </Select>
                                 <div className="col-span-2 flex flex-col gap-1.5">
@@ -360,7 +419,14 @@ export const EscalationManagerPage = () => {
                             </div>
                         ) : (
                             <TableCard.Root>
-                                <TableCard.Header title="Review History" badge={<Badge color="gray" size="sm">{filteredHistory.length}</Badge>} />
+                                <TableCard.Header
+                                    title="Review History"
+                                    badge={
+                                        <Badge color="gray" size="sm">
+                                            {filteredHistory.length}
+                                        </Badge>
+                                    }
+                                />
                                 <Table aria-label="Escalation review history">
                                     <Table.Header>
                                         <Table.Head id="ticket" label="Ticket" isRowHeader />
@@ -378,7 +444,11 @@ export const EscalationManagerPage = () => {
                                                 <Table.Row id={review.id}>
                                                     <Table.Cell>
                                                         {review.ticketUrl ? (
-                                                            <button type="button" className="cursor-pointer font-medium text-brand-secondary hover:underline" onClick={() => window.open(review.ticketUrl, "_blank")}>
+                                                            <button
+                                                                type="button"
+                                                                className="cursor-pointer font-medium text-brand-secondary hover:underline"
+                                                                onClick={() => window.open(review.ticketUrl, "_blank")}
+                                                            >
                                                                 {review.ticketNumber}
                                                             </button>
                                                         ) : (
